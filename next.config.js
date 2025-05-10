@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-      domains: ['res.cloudinary.com'], // Add Cloudinary domain here
-    },
-  };
-  
-  module.exports = {
+  images: {
+    domains: ['res.cloudinary.com'], // ✅ Cloudinary domain
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
 };
+
+module.exports = nextConfig;
