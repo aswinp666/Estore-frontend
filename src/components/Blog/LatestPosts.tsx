@@ -30,7 +30,7 @@ const LatestPosts = ({ blogs }) => {
 
               <div>
                 <h3 className="text-dark leading-[22px] ease-out duration-200 mb-1.5 hover:text-blue">
-                  <Link href="/blogs/blog-details-with-sidebar">{blog.title}</Link>
+                  <Link href="/blogs/blog-details-with-sidebar">{blog.name}</Link>
                 </h3>
 
                 <span className="flex items-center gap-3">

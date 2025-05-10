@@ -10,16 +10,16 @@ const Dropdown = ({ menuItem, stickyMenu }) => {
     <li
       onClick={() => setDropdownToggler(!dropdownToggler)}
       className={`group relative before:w-0 before:h-[3px] before:bg-blue before:absolute before:left-0 before:top-0 before:rounded-b-[3px] before:ease-out before:duration-200 hover:before:w-full ${
-        pathUrl.includes(menuItem.title) && "before:!w-full"
+        pathUrl.includes(menuItem.name) && "before:!w-full"
       }`}
     >
       <a
         href="#"
         className={`hover:text-blue text-custom-sm font-medium text-dark flex items-center gap-1.5 capitalize ${
           stickyMenu ? "xl:py-4" : "xl:py-6"
-        } ${pathUrl.includes(menuItem.title) && "!text-blue"}`}
+        } ${pathUrl.includes(menuItem.name) && "!text-blue"}`}
       >
-        {menuItem.title}
+        {menuItem.name}
         <svg
           className="fill-current cursor-pointer"
           width="16"
@@ -53,7 +53,7 @@ const Dropdown = ({ menuItem, stickyMenu }) => {
                 pathUrl === item.path && "text-blue bg-gray-1"
               } `}
             >
-              {item.title}
+              {item.name}
             </Link>
           </li>
         ))}
