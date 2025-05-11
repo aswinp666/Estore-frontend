@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import { useAppSelector } from "@/redux/store";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
+import PaymentSuccess from "./PaymentSuccess"; // Import the success component
 
 const Checkout = () => {
   const cartItems = useAppSelector((state) => state.cartReducer.items);
@@ -15,6 +16,7 @@ const Checkout = () => {
 
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState(false); // New state for payment status
 
   const [billingData, setBillingData] = useState({
     firstName: "",
@@ -140,7 +142,6 @@ const Checkout = () => {
     return { pdf, invoiceId };
   };
 
-    
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountInPaise = Math.round(grandTotal * 100);
@@ -165,7 +166,10 @@ const Checkout = () => {
         order_id: data.id,
         handler: async function (response: any) {
           alert("Payment successful!");
-        
+          
+          // Set payment success to true
+          setPaymentSuccess(true);
+          
           const { pdf, invoiceId } = await generateInvoicePDF();
           
           // ✅ Save invoice to MongoDB
@@ -236,6 +240,12 @@ const Checkout = () => {
     }
   };
 
+  // If payment is successful, show the success component
+  if (paymentSuccess) {
+    return <PaymentSuccess invoiceNumber={invoiceNumber} grandTotal={grandTotal} />;
+  }
+
+  // Otherwise show the normal checkout form
   return (
     <>
       <Breadcrumb title={"Checkout"} pages={["checkout"]} />
