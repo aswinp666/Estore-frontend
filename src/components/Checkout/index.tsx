@@ -228,11 +228,11 @@ const Checkout = () => {
                 }));
 
                 // Redirect to success page
-                router.push('/payment-success');
+                router.push('/Checkout/payment-success');
               } catch (error) {
                 console.error("Email error:", error);
                 // Still redirect even if email fails
-                router.push('/payment-success');
+                router.push('/Checkout/payment-success');
               }
             };
           
