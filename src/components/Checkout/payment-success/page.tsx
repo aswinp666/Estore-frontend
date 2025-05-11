@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
-import Breadcrumb from "../../components/Common/Breadcrumb";
+import Breadcrumb from "../../Common/Breadcrumb";
 import Link from "next/link";
 
 const PaymentSuccess = ({ invoiceNumber, grandTotal }: { invoiceNumber: string; grandTotal: number }) => {
