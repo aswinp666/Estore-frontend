@@ -6,10 +6,8 @@ import jsPDF from "jspdf";
 import { useAppSelector } from "@/redux/store";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
-import { useRouter } from "next/navigation";
 
 const Checkout = () => {
-  const router = useRouter();
   const cartItems = useAppSelector((state) => state.cartReducer.items);
   const totalPrice = useAppSelector(selectTotalPrice);
   const shippingFee = totalPrice * 0.002;
@@ -142,16 +140,9 @@ const Checkout = () => {
     return { pdf, invoiceId };
   };
 
+    
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate billing data before payment
-    if (!billingData.firstName || !billingData.lastName || !billingData.address || 
-        !billingData.town || !billingData.phone || !billingData.email) {
-      alert("Please fill in all required billing information");
-      return;
-    }
-
     const amountInPaise = Math.round(grandTotal * 100);
 
     try {
@@ -173,10 +164,12 @@ const Checkout = () => {
         description: "Order Payment",
         order_id: data.id,
         handler: async function (response: any) {
+          alert("Payment successful!");
+        
+          const { pdf, invoiceId } = await generateInvoicePDF();
+          
+          // ✅ Save invoice to MongoDB
           try {
-            const { pdf, invoiceId } = await generateInvoicePDF();
-            
-            // Save invoice to MongoDB
             const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -186,61 +179,46 @@ const Checkout = () => {
                 shippingFee,
                 grandTotal,
                 paymentStatus: "Paid",
-                invoiceNumber: invoiceId,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySignature: response.razorpay_signature
               }),
             });
 
             if (!saveRes.ok) throw new Error("Failed to save invoice");
-
-            // Send email with PDF
-            const pdfBlob = pdf.output("blob");
-            const reader = new FileReader();
-          
-            reader.onloadend = async function () {
-              try {
-                const base64PDF = (reader.result as string).split(",")[1];
-            
-                await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    to: billingData.email,
-                    subject: "Thank You for Your Purchase!",
-                    html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
-                           <p>Thanks for shopping with us!</p>
-                           <p><strong>Invoice Number:</strong> ${invoiceId}</p>
-                           <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p>`,
-                    attachment: {
-                      filename: `Invoice_${invoiceId}.pdf`,
-                      content: base64PDF,
-                    },
-                  }),
-                });
-
-                // Save to localStorage for the success page
-                localStorage.setItem('latestOrder', JSON.stringify({
-                  invoiceNumber: invoiceId,
-                  grandTotal,
-                  billingData
-                }));
-
-                // Redirect to success page
-                router.push('/Checkout/payment-success');
-              } catch (error) {
-                console.error("Email error:", error);
-                // Still redirect even if email fails
-                router.push('/Checkout/payment-success');
-              }
-            };
-          
-            reader.readAsDataURL(pdfBlob);
+            console.log("Invoice saved successfully!");
           } catch (err) {
-            console.error("Post-payment processing error:", err);
-            alert("Payment was successful but there was an error processing your order. Please contact support.");
+            console.error("Invoice save error:", err);
           }
+
+          // Send email with PDF
+          const pdfBlob = pdf.output("blob");
+          const reader = new FileReader();
+        
+          reader.onloadend = async function () {
+            try {
+              const base64PDF = (reader.result as string).split(",")[1];
+        
+              await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  to: billingData.email,
+                  subject: "Thank You for Your Purchase!",
+                  html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
+                         <p>Thanks for shopping with us!</p>
+                         <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p>`,
+                  attachment: {
+                    filename: `Invoice_${invoiceId}.pdf`,
+                    content: base64PDF,
+                  },
+                }),
+              });
+
+              pdf.save(`Invoice_${invoiceId}.pdf`);
+            } catch (error) {
+              console.error("Email error:", error);
+            }
+          };
+        
+          reader.readAsDataURL(pdfBlob);
         },
         prefill: {
           name: billingData.firstName + " " + billingData.lastName,
@@ -248,11 +226,6 @@ const Checkout = () => {
           contact: billingData.phone,
         },
         theme: { color: "#0d6efd" },
-        modal: {
-          ondismiss: function() {
-            alert("Payment window was closed. If you've already paid, you'll receive a confirmation soon.");
-          }
-        }
       };
 
       const rzp = new (window as any).Razorpay(options);
@@ -268,7 +241,7 @@ const Checkout = () => {
       <Breadcrumb title={"Checkout"} pages={["checkout"]} />
       <section className="overflow-hidden py-20 bg-gray-2">
         <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-          <form onSubmit={handlePayment}>
+          <form>
             <div className="flex flex-col lg:flex-row gap-7.5 xl:gap-11">
               <div className="lg:max-w-[670px] w-full">
                 <Login />
@@ -307,11 +280,11 @@ const Checkout = () => {
                   </div>
                 </div>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handlePayment}
                   className="w-full flex justify-center font-medium text-white bg-blue py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-dark mt-7.5"
-                  disabled={cartItems.length === 0}
                 >
-                  {cartItems.length === 0 ? "Cart is Empty" : "Pay Now"}
+                  Pay Now
                 </button>
               </div>
             </div>
