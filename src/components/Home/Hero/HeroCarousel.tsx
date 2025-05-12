@@ -6,9 +6,6 @@ import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import Image from "next/image";
-import { useDispatch } from "react-redux";
-import { addItemToCart } from "@/redux/features/cart-slice";
-import { AppDispatch } from "@/redux/store";
 
 type Product = {
   id: number;
@@ -16,13 +13,10 @@ type Product = {
   imageUrl: string;
   category: string;
   description: string;
-  price?: number;
-  discountedPrice?: number;
 };
 
 const HeroCarousal = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -35,21 +29,10 @@ const HeroCarousal = () => {
         console.error("Failed to fetch products:", error);
       }
     };
-
+  
     fetchProducts();
   }, []);
-
-  const handleAddToCart = (product: Product) => {
-    dispatch(
-      addItemToCart({
-        _id: product.id, // Assuming `id` maps to `_id` in your cart item type
-        name: product.name,
-        price: product.discountedPrice || product.price || 0,
-        quantity: 1,
-        imageUrl: product.imageUrl,
-      })
-    );
-  };
+  
 
   return (
     <Swiper
@@ -82,14 +65,17 @@ const HeroCarousal = () => {
                 <a href="#">{product.name}</a>
               </h1>
 
-              <p>{product.description}</p>
+              <p>
+                {product.description}
+                <br />
+              </p>
 
-              <button
-                onClick={() => handleAddToCart(product)}
+              <a
+                href="#"
                 className="inline-flex font-medium text-white text-custom-sm rounded-md bg-dark py-3 px-9 ease-out duration-200 hover:bg-blue mt-10"
               >
                 Shop Now
-              </button>
+              </a>
             </div>
 
             <div>
