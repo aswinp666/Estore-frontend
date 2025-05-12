@@ -375,24 +375,23 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                {paymentMethod === "razorpay" ? (
-                  <button
-                    type="button"
-                    onClick={handlePayment}
-                    className="w-full flex justify-center font-medium text-white bg-blue py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-dark mt-7.5"
-                  >
-                    Pay Now
-                  </button>
-                ) : (
-                <button
-  type="button"
-  onClick={handlePayment}
-  className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
->
-  Place Order (Cash On Delivery)
-</button>
-
-                )}
+             {paymentMethod === "razorpay" ? (
+  <button
+    type="button"
+    onClick={handlePayment}
+    className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
+  >
+    Pay Now
+  </button>
+) : (
+  <button
+    type="button"
+    onClick={handlePayment}
+    className="w-full flex justify-center font-medium text-white bg-blue-500 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-600 mt-7.5"
+  >
+    Place Order (Cash On Delivery)
+  </button>
+)}
               </div>
             </div>
           </form>
