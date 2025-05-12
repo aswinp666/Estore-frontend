@@ -174,9 +174,15 @@ const SidebarContent = ({
 
 
         
-        <ListItem disablePadding>
+      <ListItem disablePadding>
   <Link href="/order-history" passHref>
-    <ListItemButton component="a">
+    <ListItemButton
+      component="a"
+      sx={{
+        textDecoration: 'none', // removes underline
+        color: 'inherit' // keeps text color consistent
+      }}
+    >
       <ListItemIcon sx={{ color: 'white' }}>
         <SettingsIcon />
       </ListItemIcon>
