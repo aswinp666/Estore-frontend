@@ -374,8 +374,7 @@ const Checkout = () => {
                     </div>
                   </div>
                 </div>
-
-             {paymentMethod === "razorpay" ? (
+{paymentMethod === "razorpay" ? (
   <button
     type="button"
     onClick={handlePayment}
@@ -387,7 +386,7 @@ const Checkout = () => {
   <button
     type="button"
     onClick={handlePayment}
-    className="w-full flex justify-center font-medium text-white bg-blue-500 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-600 mt-7.5"
+    className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
   >
     Place Order (Cash On Delivery)
   </button>
