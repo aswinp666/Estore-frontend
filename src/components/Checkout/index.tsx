@@ -15,6 +15,7 @@ const Checkout = () => {
 
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
 
   const [billingData, setBillingData] = useState({
     firstName: "",
@@ -40,7 +41,7 @@ const Checkout = () => {
     document.body.appendChild(script);
   }, []);
 
-  const generateInvoicePDF = async () => {
+  const generateInvoicePDF = async (paymentStatus: "Paid" | "Cash On Delivery") => {
     const pdf = new jsPDF("p", "mm", "a4");
     const invoiceId = `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
     setInvoiceNumber(invoiceId);
@@ -70,9 +71,14 @@ const Checkout = () => {
     pdf.text(`Email: ${billingData.email}`, 15, 100);
   
     // Payment Status Badge
-    pdf.setFont("helvetica", "bold").setTextColor(255, 255, 255).setFillColor(0, 128, 0);
+    pdf.setFont("helvetica", "bold").setTextColor(255, 255, 255);
+    if (paymentStatus === "Paid") {
+      pdf.setFillColor(0, 128, 0); // Green for Paid
+    } else {
+      pdf.setFillColor(255, 165, 0); // Orange for Cash On Delivery
+    }
     pdf.roundedRect(150, 60, 40, 10, 2, 2, "F");
-    pdf.text("PAID", 170, 67, { align: "center" });
+    pdf.text(paymentStatus === "Paid" ? "PAID" : "COD", 170, 67, { align: "center" });
   
     // Items Table Header
     pdf.setTextColor(0, 0, 0).setFontSize(11).setFont("helvetica", "bold");
@@ -130,7 +136,7 @@ const Checkout = () => {
   
     // Footer
     pdf.setFont("helvetica", "normal").setFontSize(10);
-    pdf.text("Payment Method: Razorpay (Online)", 15, yPosition);
+    pdf.text(`Payment Method: ${paymentStatus === "Paid" ? "Razorpay (Online)" : "Cash On Delivery"}`, 15, yPosition);
   
     pdf.setFontSize(10).setTextColor(40, 53, 147);
     pdf.text("Thank you for your business!", 105, 280, { align: "center" });
@@ -140,99 +146,161 @@ const Checkout = () => {
     return { pdf, invoiceId };
   };
 
-    
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amountInPaise = Math.round(grandTotal * 100);
-
-    try {
-      const res = await fetch("https://estore-backend-dyl3.onrender.com/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amountInPaise }),
-      });
-
-      if (!res.ok) throw new Error("Order creation failed");
-
-      const data = await res.json();
-
-      const options = {
-        key: "rzp_test_0rqSTvIDKUiY3m",
-        amount: data.amount,
-        currency: "INR",
-        name: "Estore Online",
-        description: "Order Payment",
-        order_id: data.id,
-        handler: async function (response: any) {
-          alert("Payment successful!");
+    
+    if (paymentMethod === "cod") {
+      try {
+        const { pdf, invoiceId } = await generateInvoicePDF("Cash On Delivery");
         
-          const { pdf, invoiceId } = await generateInvoicePDF();
-          
-          // ✅ Save invoice to MongoDB
+        // Save COD order to MongoDB
+        try {
+          const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              billingData,
+              cartItems,
+              shippingFee,
+              grandTotal,
+              paymentStatus: "Cash On Delivery",
+            }),
+          });
+
+          if (!saveRes.ok) throw new Error("Failed to save COD order");
+          console.log("COD order saved successfully!");
+        } catch (err) {
+          console.error("COD order save error:", err);
+        }
+
+        // Send email for COD order
+        const pdfBlob = pdf.output("blob");
+        const reader = new FileReader();
+      
+        reader.onloadend = async function () {
           try {
-            const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
+            const base64PDF = (reader.result as string).split(",")[1];
+      
+            await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                billingData,
-                cartItems,
-                shippingFee,
-                grandTotal,
-                paymentStatus: "Paid",
+                to: billingData.email,
+                subject: "Your Order Has Been Placed!",
+                html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
+                       <p>Your order has been placed successfully!</p>
+                       <p><strong>Payment Method:</strong> Cash On Delivery</p>
+                       <p><strong>Amount to Pay:</strong> ₹${grandTotal.toFixed(2)}</p>`,
+                attachment: {
+                  filename: `Invoice_${invoiceId}.pdf`,
+                  content: base64PDF,
+                },
               }),
             });
 
-            if (!saveRes.ok) throw new Error("Failed to save invoice");
-            console.log("Invoice saved successfully!");
-          } catch (err) {
-            console.error("Invoice save error:", err);
+            pdf.save(`Invoice_${invoiceId}.pdf`);
+            alert("Order placed successfully! You'll pay when your order arrives.");
+          } catch (error) {
+            console.error("Email error:", error);
           }
+        };
+      
+        reader.readAsDataURL(pdfBlob);
+      } catch (err) {
+        console.error("COD order failed", err);
+        alert("Order placement failed. Please try again.");
+      }
+    } else {
+      // Existing Razorpay payment logic
+      const amountInPaise = Math.round(grandTotal * 100);
 
-          // Send email with PDF
-          const pdfBlob = pdf.output("blob");
-          const reader = new FileReader();
-        
-          reader.onloadend = async function () {
+      try {
+        const res = await fetch("https://estore-backend-dyl3.onrender.com/api/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: amountInPaise }),
+        });
+
+        if (!res.ok) throw new Error("Order creation failed");
+
+        const data = await res.json();
+
+        const options = {
+          key: "rzp_test_0rqSTvIDKUiY3m",
+          amount: data.amount,
+          currency: "INR",
+          name: "Estore Online",
+          description: "Order Payment",
+          order_id: data.id,
+          handler: async function (response: any) {
+            alert("Payment successful!");
+          
+            const { pdf, invoiceId } = await generateInvoicePDF("Paid");
+            
             try {
-              const base64PDF = (reader.result as string).split(",")[1];
-        
-              await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
+              const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  to: billingData.email,
-                  subject: "Thank You for Your Purchase!",
-                  html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
-                         <p>Thanks for shopping with us!</p>
-                         <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p>`,
-                  attachment: {
-                    filename: `Invoice_${invoiceId}.pdf`,
-                    content: base64PDF,
-                  },
+                  billingData,
+                  cartItems,
+                  shippingFee,
+                  grandTotal,
+                  paymentStatus: "Paid",
                 }),
               });
 
-              pdf.save(`Invoice_${invoiceId}.pdf`);
-            } catch (error) {
-              console.error("Email error:", error);
+              if (!saveRes.ok) throw new Error("Failed to save invoice");
+              console.log("Invoice saved successfully!");
+            } catch (err) {
+              console.error("Invoice save error:", err);
             }
-          };
-        
-          reader.readAsDataURL(pdfBlob);
-        },
-        prefill: {
-          name: billingData.firstName + " " + billingData.lastName,
-          email: billingData.email,
-          contact: billingData.phone,
-        },
-        theme: { color: "#0d6efd" },
-      };
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error("Payment failed", err);
-      alert("Payment failed. Please try again.");
+            const pdfBlob = pdf.output("blob");
+            const reader = new FileReader();
+          
+            reader.onloadend = async function () {
+              try {
+                const base64PDF = (reader.result as string).split(",")[1];
+            
+                await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    to: billingData.email,
+                    subject: "Thank You for Your Purchase!",
+                    html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
+                           <p>Thanks for shopping with us!</p>
+                           <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p>`,
+                    attachment: {
+                      filename: `Invoice_${invoiceId}.pdf`,
+                      content: base64PDF,
+                    },
+                  }),
+                });
+
+                pdf.save(`Invoice_${invoiceId}.pdf`);
+              } catch (error) {
+                console.error("Email error:", error);
+              }
+            };
+          
+            reader.readAsDataURL(pdfBlob);
+          },
+          prefill: {
+            name: billingData.firstName + " " + billingData.lastName,
+            email: billingData.email,
+            contact: billingData.phone,
+          },
+          theme: { color: "#0d6efd" },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        console.error("Payment failed", err);
+        alert("Payment failed. Please try again.");
+      }
     }
   };
 
@@ -277,15 +345,53 @@ const Checkout = () => {
                         ₹{grandTotal.toFixed(2)}
                       </p>
                     </div>
+
+                    {/* Payment Method Selection */}
+                    <div className="mt-6">
+                      <h4 className="font-medium text-dark mb-3">Payment Method</h4>
+                      <div className="flex flex-col gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethod === "razorpay"}
+                            onChange={() => setPaymentMethod("razorpay")}
+                            className="w-4 h-4"
+                          />
+                          <span>Pay Now (Credit/Debit Card, UPI, Net Banking)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethod === "cod"}
+                            onChange={() => setPaymentMethod("cod")}
+                            className="w-4 h-4"
+                          />
+                          <span>Cash On Delivery</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handlePayment}
-                  className="w-full flex justify-center font-medium text-white bg-blue py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-dark mt-7.5"
-                >
-                  Pay Now
-                </button>
+
+                {paymentMethod === "razorpay" ? (
+                  <button
+                    type="button"
+                    onClick={handlePayment}
+                    className="w-full flex justify-center font-medium text-white bg-blue py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-dark mt-7.5"
+                  >
+                    Pay Now
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePayment}
+                    className="w-full flex justify-center font-medium text-white bg-green-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-green-700 mt-7.5"
+                  >
+                    Place Order (Cash On Delivery)
+                  </button>
+                )}
               </div>
             </div>
           </form>
