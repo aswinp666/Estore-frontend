@@ -175,12 +175,15 @@ const SidebarContent = ({
 
         
       <ListItem disablePadding>
-  <Link href="/order-history" passHref>
+  <NextLink href="/order-history" passHref>
     <ListItemButton
       component="a"
       sx={{
-        textDecoration: 'none', // removes underline
-        color: 'inherit' // keeps text color consistent
+        textDecoration: 'none',
+        color: 'white',
+        '&:hover': {
+          textDecoration: 'none',
+        },
       }}
     >
       <ListItemIcon sx={{ color: 'white' }}>
@@ -188,7 +191,7 @@ const SidebarContent = ({
       </ListItemIcon>
       <ListItemText primary="Order History" />
     </ListItemButton>
-  </Link>
+  </NextLink>
 </ListItem>
 
 
