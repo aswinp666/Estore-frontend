@@ -384,13 +384,14 @@ const Checkout = () => {
                     Pay Now
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handlePayment}
-                    className="w-full flex justify-center font-medium text-white bg-green-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-green-700 mt-7.5"
-                  >
-                    Place Order (Cash On Delivery)
-                  </button>
+                <button
+  type="button"
+  onClick={handlePayment}
+  className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
+>
+  Place Order (Cash On Delivery)
+</button>
+
                 )}
               </div>
             </div>
