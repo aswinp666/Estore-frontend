@@ -378,7 +378,22 @@ const Checkout = () => {
   <button
     type="button"
     onClick={handlePayment}
-    className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
+    style={{
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      fontWeight: 500,
+      color: 'white',
+      backgroundColor: '#2563eb', // blue-600
+      padding: '12px 24px',
+      borderRadius: '6px',
+      transition: 'background-color 200ms ease-out',
+      marginTop: '30px',
+      border: 'none',
+      cursor: 'pointer'
+    }}
+    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'} // blue-700
+    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'} // blue-600
   >
     Pay Now
   </button>
@@ -386,7 +401,22 @@ const Checkout = () => {
   <button
     type="button"
     onClick={handlePayment}
-    className="w-full flex justify-center font-medium text-white bg-blue-600 py-3 px-6 rounded-md ease-out duration-200 hover:bg-blue-700 mt-7.5"
+    style={{
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      fontWeight: 500,
+      color: 'white',
+      backgroundColor: '#16a34a', // green-600
+      padding: '12px 24px',
+      borderRadius: '6px',
+      transition: 'background-color 200ms ease-out',
+      marginTop: '30px',
+      border: 'none',
+      cursor: 'pointer'
+    }}
+    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'} // green-700
+    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'} // green-600
   >
     Place Order (Cash On Delivery)
   </button>
