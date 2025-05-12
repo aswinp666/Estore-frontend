@@ -76,11 +76,12 @@ const OrderHistory = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  const getStatusIcon = (status) => {
+const getStatusIcon = (status) => {
   switch (status.toLowerCase()) {
     case 'paid':
       return <Paid fontSize="small" color="success" />;
     case 'cash on delivery':
+      return <Pending fontSize="small" color="warning" />; // COD shows as pending
     case 'pending':
       return <Pending fontSize="small" color="warning" />;
     case 'cancelled':
@@ -93,6 +94,7 @@ const OrderHistory = () => {
       return <Pending fontSize="small" />;
   }
 };
+
 
   if (loading) {
     return (
@@ -324,19 +326,19 @@ const OrderHistory = () => {
                       ₹{invoice.grandTotal?.toFixed(2)}
                     </Typography>
                   </TableCell>
-                // In the table row:
+                
 <TableCell align="center">
   <Chip
     icon={getStatusIcon(invoice.paymentStatus)}
     label={
-      invoice.paymentMethod === 'Cash On Delivery' ? 'Pending' : 
+      invoice.paymentStatus === 'Cash On Delivery' ? 'Pending' : 
       invoice.paymentStatus?.charAt(0).toUpperCase() + invoice.paymentStatus?.slice(1)
     }
     size="small"
     sx={{
       backgroundColor: 
         invoice.paymentStatus === 'paid' ? theme.palette.success.light :
-        invoice.paymentMethod === 'Cash On Delivery' || invoice.paymentStatus === 'pending' ? theme.palette.warning.light :
+        invoice.paymentStatus === 'Cash On Delivery' || invoice.paymentStatus === 'pending' ? theme.palette.warning.light :
         invoice.paymentStatus === 'cancelled' ? theme.palette.error.light :
         theme.palette.info.light,
       color: 'white',
@@ -345,6 +347,8 @@ const OrderHistory = () => {
     }}
   />
 </TableCell>
+
+
                   <TableCell align="right">
                     <Tooltip title="View details">
                       <IconButton 
@@ -468,7 +472,7 @@ const OrderHistory = () => {
 <Chip
   icon={getStatusIcon(selectedOrder.paymentStatus)}
   label={
-    selectedOrder.paymentMethod === 'Cash On Delivery' ? 'Pending' : 
+    selectedOrder.paymentStatus === 'Cash On Delivery' ? 'Pending' : 
     selectedOrder.paymentStatus?.charAt(0).toUpperCase() + selectedOrder.paymentStatus?.slice(1)
   }
   size="small"
@@ -476,13 +480,14 @@ const OrderHistory = () => {
     mt: 1,
     backgroundColor: 
       selectedOrder.paymentStatus === 'paid' ? theme.palette.success.light :
-      selectedOrder.paymentMethod === 'Cash On Delivery' || selectedOrder.paymentStatus === 'pending' ? theme.palette.warning.light :
+      selectedOrder.paymentStatus === 'Cash On Delivery' || selectedOrder.paymentStatus === 'pending' ? theme.palette.warning.light :
       selectedOrder.paymentStatus === 'cancelled' ? theme.palette.error.light :
       theme.palette.info.light,
     color: 'white',
     fontWeight: 500
   }}
 />
+
                         </Box>
                       </Box>
                       <Box sx={{ mt: 3 }}>
