@@ -77,21 +77,22 @@ const OrderHistory = () => {
   );
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'paid':
-        return <Paid fontSize="small" color="success" />;
-      case 'pending':
-        return <Pending fontSize="small" color="warning" />;
-      case 'cancelled':
-        return <Cancel fontSize="small" color="error" />;
-      case 'shipped':
-        return <LocalShipping fontSize="small" color="info" />;
-      case 'completed':
-        return <DoneAll fontSize="small" color="success" />;
-      default:
-        return <Pending fontSize="small" />;
-    }
-  };
+  switch (status.toLowerCase()) {
+    case 'paid':
+      return <Paid fontSize="small" color="success" />;
+    case 'cash on delivery':
+    case 'pending':
+      return <Pending fontSize="small" color="warning" />;
+    case 'cancelled':
+      return <Cancel fontSize="small" color="error" />;
+    case 'shipped':
+      return <LocalShipping fontSize="small" color="info" />;
+    case 'completed':
+      return <DoneAll fontSize="small" color="success" />;
+    default:
+      return <Pending fontSize="small" />;
+  }
+};
 
   if (loading) {
     return (
@@ -323,23 +324,27 @@ const OrderHistory = () => {
                       ₹{invoice.grandTotal?.toFixed(2)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      icon={getStatusIcon(invoice.paymentStatus)}
-                      label={invoice.paymentStatus?.charAt(0).toUpperCase() + invoice.paymentStatus?.slice(1)}
-                      size="small"
-                      sx={{
-                        backgroundColor: 
-                          invoice.paymentStatus === 'paid' ? theme.palette.success.light :
-                          invoice.paymentStatus === 'pending' ? theme.palette.warning.light :
-                          invoice.paymentStatus === 'cancelled' ? theme.palette.error.light :
-                          theme.palette.info.light,
-                        color: 'white',
-                        fontWeight: 500,
-                        minWidth: 90
-                      }}
-                    />
-                  </TableCell>
+                // In the table row:
+<TableCell align="center">
+  <Chip
+    icon={getStatusIcon(invoice.paymentStatus)}
+    label={
+      invoice.paymentMethod === 'Cash On Delivery' ? 'Pending' : 
+      invoice.paymentStatus?.charAt(0).toUpperCase() + invoice.paymentStatus?.slice(1)
+    }
+    size="small"
+    sx={{
+      backgroundColor: 
+        invoice.paymentStatus === 'paid' ? theme.palette.success.light :
+        invoice.paymentMethod === 'Cash On Delivery' || invoice.paymentStatus === 'pending' ? theme.palette.warning.light :
+        invoice.paymentStatus === 'cancelled' ? theme.palette.error.light :
+        theme.palette.info.light,
+      color: 'white',
+      fontWeight: 500,
+      minWidth: 90
+    }}
+  />
+</TableCell>
                   <TableCell align="right">
                     <Tooltip title="View details">
                       <IconButton 
@@ -459,21 +464,25 @@ const OrderHistory = () => {
                           <Typography sx={{ fontWeight: 600 }}>
                             {selectedOrder.billingData?.firstName} {selectedOrder.billingData?.lastName}
                           </Typography>
-                          <Chip
-                            icon={getStatusIcon(selectedOrder.paymentStatus)}
-                            label={selectedOrder.paymentStatus?.charAt(0).toUpperCase() + selectedOrder.paymentStatus?.slice(1)}
-                            size="small"
-                            sx={{
-                              mt: 1,
-                              backgroundColor: 
-                                selectedOrder.paymentStatus === 'paid' ? theme.palette.success.light :
-                                selectedOrder.paymentStatus === 'pending' ? theme.palette.warning.light :
-                                selectedOrder.paymentStatus === 'cancelled' ? theme.palette.error.light :
-                                theme.palette.info.light,
-                              color: 'white',
-                              fontWeight: 500
-                            }}
-                          />
+                      
+<Chip
+  icon={getStatusIcon(selectedOrder.paymentStatus)}
+  label={
+    selectedOrder.paymentMethod === 'Cash On Delivery' ? 'Pending' : 
+    selectedOrder.paymentStatus?.charAt(0).toUpperCase() + selectedOrder.paymentStatus?.slice(1)
+  }
+  size="small"
+  sx={{
+    mt: 1,
+    backgroundColor: 
+      selectedOrder.paymentStatus === 'paid' ? theme.palette.success.light :
+      selectedOrder.paymentMethod === 'Cash On Delivery' || selectedOrder.paymentStatus === 'pending' ? theme.palette.warning.light :
+      selectedOrder.paymentStatus === 'cancelled' ? theme.palette.error.light :
+      theme.palette.info.light,
+    color: 'white',
+    fontWeight: 500
+  }}
+/>
                         </Box>
                       </Box>
                       <Box sx={{ mt: 3 }}>
@@ -533,9 +542,10 @@ const OrderHistory = () => {
                         </Typography>
                       </Box>
                       <Box sx={{ mt: 3 }}>
-                        <Typography variant="body2" sx={{ mb: 1 }}>
-                          <strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'Razorpay'}
-                        </Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+  <strong>Payment Method:</strong> 
+  {selectedOrder.paymentMethod === 'Cash On Delivery' ? 'Cash On Delivery (Pending)' : selectedOrder.paymentMethod || 'Razorpay'}
+</Typography>
                       </Box>
                     </Box>
                   </Box>
