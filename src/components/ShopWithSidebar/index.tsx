@@ -32,32 +32,32 @@ const ShopWithSidebar = () => {
 
   const categories = [
     {
-      name: "Desktop",
+      name: "TV",
       products: 10,
       isRefined: true,
     },
     {
-      name: "Laptop",
+      name: "Mobile",
       products: 12,
       isRefined: false,
     },
     {
-      name: "Monitor",
+      name: "Consoles",
       products: 30,
       isRefined: false,
     },
     {
-      name: "UPS",
+      name: "Earpods",
       products: 23,
       isRefined: false,
     },
     {
-      name: "Phone",
+      name: "Tablets",
       products: 10,
       isRefined: false,
     },
     {
-      name: "Watch",
+      name: "Camera",
       products: 13,
       isRefined: false,
     },
