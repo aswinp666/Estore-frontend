@@ -89,7 +89,7 @@ const Header = () => {
             <div className="max-w-[475px] w-full">
               <form>
                 <div className="flex items-center">
-                  <CustomSelect options={options} />
+                  
 
                   <div className="relative max-w-[333px] sm:min-w-[333px] w-full">
                     {/* <!-- divider --> */}
