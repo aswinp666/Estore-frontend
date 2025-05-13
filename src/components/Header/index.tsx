@@ -93,7 +93,7 @@ const Header = () => {
 
                   <div className="relative max-w-[333px] sm:min-w-[333px] w-full">
                     {/* <!-- divider --> */}
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 inline-block w-px h-5.5 bg-gray-4"></span>
+                    
                     <input
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onClick={() => setOpenModal(true)}
