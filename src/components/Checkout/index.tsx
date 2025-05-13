@@ -6,7 +6,73 @@ import jsPDF from "jspdf";
 import { useAppSelector } from "@/redux/store";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
-import { Snackbar, Alert, Button } from "@mui/material";
+import { Snackbar, Alert, Button, Box, Typography, Stepper, Step, StepLabel, CircularProgress, StepConnector, stepConnectorClasses, styled } from "@mui/material";
+import { Check } from "@mui/icons-material"; // For custom step icon
+
+// Define Order Statuses
+const ORDER_STATUSES = ["Processing", "Packaged", "Shipped", "Out For Delivery", "Delivered"];
+
+// Custom Connector for Stepper
+const QontoConnector = styled(StepConnector)(({ theme }) => ({
+  [`&.${stepConnectorClasses.alternativeLabel}`]: {
+    top: 10,
+    left: 'calc(-50% + 16px)',
+    right: 'calc(50% + 16px)',
+  },
+  [`&.${stepConnectorClasses.active}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      borderColor: theme.palette.primary.main,
+    },
+  },
+  [`&.${stepConnectorClasses.completed}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      borderColor: theme.palette.primary.main,
+    },
+  },
+  [`& .${stepConnectorClasses.line}`]: {
+    borderColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#eaeaf0',
+    borderTopWidth: 3,
+    borderRadius: 1,
+  },
+}));
+
+// Custom Step Icon
+const QontoStepIconRoot = styled('div')<{ ownerState: { active?: boolean } }>(
+  ({ theme, ownerState }) => ({
+    color: theme.palette.mode === 'dark' ? theme.palette.grey[700] : '#eaeaf0',
+    display: 'flex',
+    height: 22,
+    alignItems: 'center',
+    ...(ownerState.active && {
+      color: theme.palette.primary.main,
+    }),
+    '& .QontoStepIcon-completedIcon': {
+      color: theme.palette.primary.main,
+      zIndex: 1,
+      fontSize: 18,
+    },
+    '& .QontoStepIcon-circle': {
+      width: 8,
+      height: 8,
+      borderRadius: '50%',
+      backgroundColor: 'currentColor',
+    },
+  }),
+);
+
+function QontoStepIcon(props: any) {
+  const { active, completed, className } = props;
+  return (
+    <QontoStepIconRoot ownerState={{ active }} className={className}>
+      {completed ? (
+        <Check className="QontoStepIcon-completedIcon" />
+      ) : (
+        <div className="QontoStepIcon-circle" />
+      )}
+    </QontoStepIconRoot>
+  );
+}
+
 
 const Checkout = () => {
   const cartItems = useAppSelector((state) => state.cartReducer.items);
@@ -20,7 +86,6 @@ const Checkout = () => {
   const [invoicePDF, setInvoicePDF] = useState<jsPDF | null>(null);
   const [showDownloadButton, setShowDownloadButton] = useState(false);
   
-  // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -39,6 +104,12 @@ const Checkout = () => {
     email: "",
   });
 
+  // New states for payment success and order tracking
+  const [paymentSuccessful, setPaymentSuccessful] = useState(false);
+  const [currentOrderStatus, setCurrentOrderStatus] = useState("Processing");
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
+
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setBillingData((prev) => ({ ...prev, [name]: value }));
@@ -51,23 +122,59 @@ const Checkout = () => {
     document.body.appendChild(script);
   }, []);
 
+  // Effect to fetch order status if payment was successful and order ID is known
+  // This will also be triggered if the order status is updated elsewhere (e.g., admin panel)
+  // For true real-time, you'd use WebSockets or Server-Sent Events.
+  // Polling is a simpler alternative for now.
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (paymentSuccessful && currentOrderId) {
+      const fetchStatus = async () => {
+        setLoadingOrderStatus(true);
+        try {
+          // Ensure this matches your backend route for fetching a single invoice/order
+          const res = await fetch(`https://estore-backend-dyl3.onrender.com/api/invoice/${currentOrderId}`);
+          if (!res.ok) {
+            throw new Error('Failed to fetch order status');
+          }
+          const data = await res.json();
+          if (data.orderStatus) {
+            setCurrentOrderStatus(data.orderStatus);
+          }
+        } catch (err) {
+          console.error("Error fetching order status:", err);
+          // Optionally show a toast for fetching error
+        } finally {
+          setLoadingOrderStatus(false);
+        }
+      };
+
+      fetchStatus(); // Initial fetch
+      intervalId = setInterval(fetchStatus, 30000); // Poll every 30 seconds
+    }
+    return () => clearInterval(intervalId); // Cleanup on component unmount or when orderId changes
+  }, [paymentSuccessful, currentOrderId]);
+
+
   const showToast = (message: string, severity: "success" | "error" | "warning" | "info") => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-    });
+    setSnackbar({ open: true, message, severity });
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const generateInvoicePDF = async (paymentStatus: "Paid" | "Cash On Delivery") => {
+  const generateInvoicePDF = async (paymentStatusForPDF: "Paid" | "Cash On Delivery", orderId: string) => {
+    // ... (your existing PDF generation logic)
+    // Ensure you use the passed `orderId` if needed in the PDF or use the `invoiceNumber` state.
+    // For this example, `invoiceNumber` state is used as per your original code.
     const pdf = new jsPDF("p", "mm", "a4");
-    const invoiceId = `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
-    setInvoiceNumber(invoiceId);
-  
+    // const invoiceIdForPdf = `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
+    // setInvoiceNumber(invoiceIdForPdf); // Set this based on the actual saved invoice ID from backend if possible
+    // For consistency, it might be better to use the `orderId` (which is the MongoDB _id)
+    setInvoiceNumber(orderId);
+
+
     // Header Section
     pdf.setFontSize(20).setTextColor(40, 53, 147).setFont("helvetica", "bold");
     pdf.text("Estore Online Shop", 105, 20, { align: "center" });
@@ -76,11 +183,11 @@ const Checkout = () => {
   
     // Invoice Info
     pdf.setFontSize(10).setFont("helvetica", "normal");
-    pdf.text(`Invoice No: ${invoiceId}`, 15, 40);
+    pdf.text(`Invoice No: ${orderId}`, 15, 40); // Use actual order ID
     pdf.text(`Date: ${new Date().toLocaleDateString("en-IN")}`, 15, 45);
     pdf.text(`GSTIN: 22ABCDE1234F1Z5`, 15, 50);
   
-    // Billing Info
+    // Billing Info (using billingData state)
     pdf.setFontSize(12).setFont("helvetica", "bold");
     pdf.text("BILL TO:", 15, 65);
     pdf.setFontSize(10).setFont("helvetica", "normal");
@@ -91,18 +198,20 @@ const Checkout = () => {
     pdf.text(`${billingData.town}, ${billingData.country}`, 15, 90);
     pdf.text(`Phone: ${billingData.phone}`, 15, 95);
     pdf.text(`Email: ${billingData.email}`, 15, 100);
-  
+    
     // Payment Status Badge
     pdf.setFont("helvetica", "bold").setTextColor(255, 255, 255);
-    if (paymentStatus === "Paid") {
+    if (paymentStatusForPDF === "Paid") {
       pdf.setFillColor(0, 128, 0); // Green for Paid
     } else {
       pdf.setFillColor(255, 165, 0); // Orange for Cash On Delivery
     }
     pdf.roundedRect(150, 60, 40, 10, 2, 2, "F");
-    pdf.text(paymentStatus === "Paid" ? "PAID" : "COD", 170, 67, { align: "center" });
-  
-    // Items Table Header
+    pdf.text(paymentStatusForPDF === "Paid" ? "PAID" : "COD", 170, 67, { align: "center" });
+
+    // Items Table (as in your existing code)
+    // ...
+        // Items Table Header
     pdf.setTextColor(0, 0, 0).setFontSize(11).setFont("helvetica", "bold");
     pdf.text("No.", 15, 120);
     pdf.text("Description", 30, 120);
@@ -116,7 +225,6 @@ const Checkout = () => {
     let itemCounter = 1;
   
     cartItems.forEach((item) => {
-      // Alternate row background
       if (itemCounter % 2 === 0) {
         pdf.setFillColor(245, 245, 245);
         pdf.rect(15, yPosition - 5, 180, 10, "F");
@@ -125,7 +233,7 @@ const Checkout = () => {
       const amount = (item.discountedPrice ?? item.price) * item.quantity;
       pdf.setFontSize(10).setFont("helvetica", "normal").setTextColor(0, 0, 0);
       pdf.text(itemCounter.toString(), 17, yPosition);
-      pdf.text(item.name.substring(0, 30), 30, yPosition);
+      pdf.text(item.name.substring(0, 30), 30, yPosition); // Ensure item.name is defined
       pdf.text(item.quantity.toString(), 130, yPosition);
       pdf.text((item.discountedPrice ?? item.price).toFixed(2), 145, yPosition);
       pdf.text(amount.toFixed(2), 170, yPosition);
@@ -158,116 +266,132 @@ const Checkout = () => {
   
     // Footer
     pdf.setFont("helvetica", "normal").setFontSize(10);
-    pdf.text(`Payment Method: ${paymentStatus === "Paid" ? "Razorpay (Online)" : "Cash On Delivery"}`, 15, yPosition);
+    pdf.text(`Payment Method: ${paymentStatusForPDF === "Paid" ? "Razorpay (Online)" : "Cash On Delivery"}`, 15, yPosition);
   
     pdf.setFontSize(10).setTextColor(40, 53, 147);
     pdf.text("Thank you for your business!", 105, 280, { align: "center" });
     pdf.setTextColor(100, 100, 100);
     pdf.text("Estore Online | support@estore.com | +91 9876543210", 105, 285, { align: "center" });
-  
-    return { pdf, invoiceId };
+
+    return { pdf, invoiceId: orderId }; // Return the actual orderId
   };
 
+
   const downloadInvoice = () => {
-    if (invoicePDF) {
+    if (invoicePDF && invoiceNumber) { // Ensure invoiceNumber (orderId) is set
       invoicePDF.save(`Invoice_${invoiceNumber}.pdf`);
-      setShowDownloadButton(false);
+      // setShowDownloadButton(false); // Keep it if they might want to download again
     }
   };
 
+  const handleSuccessfulOrderPlacement = async (
+    orderData: any, // The response from your /api/invoice/save endpoint
+    paymentStatusForPDF: "Paid" | "Cash On Delivery"
+  ) => {
+    const savedOrderId = orderData._id; // Assuming backend returns the saved document with _id
+    setCurrentOrderId(savedOrderId);
+    setPaymentSuccessful(true);
+    setCurrentOrderStatus(orderData.orderStatus || "Processing"); // Set initial status from backend response
+
+    const { pdf } = await generateInvoicePDF(paymentStatusForPDF, savedOrderId);
+    setInvoicePDF(pdf);
+    setShowDownloadButton(true); // Show download button for the invoice
+
+    // Send email
+    const pdfBlob = pdf.output("blob");
+    const reader = new FileReader();
+    reader.onloadend = async function () {
+      try {
+        const base64PDF = (reader.result as string).split(",")[1];
+        const emailSubject = paymentStatusForPDF === "Paid" ? "Thank You for Your Purchase!" : "Your Order Has Been Placed!";
+        const emailHtml = paymentStatusForPDF === "Paid" 
+          ? `<p>Hi <strong>${billingData.firstName}</strong>,</p> <p>Thanks for shopping with us!</p> <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p> <p>Your order ID is ${savedOrderId}. You can track its status on our website.</p>`
+          : `<p>Hi <strong>${billingData.firstName}</strong>,</p> <p>Your order has been placed successfully!</p> <p><strong>Payment Method:</strong> Cash On Delivery</p> <p><strong>Amount to Pay:</strong> ₹${grandTotal.toFixed(2)}</p> <p>Your order ID is ${savedOrderId}. You can track its status on our website.</p>`;
+
+        await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: billingData.email,
+            subject: emailSubject,
+            html: emailHtml,
+            attachment: {
+              filename: `Invoice_${savedOrderId}.pdf`,
+              content: base64PDF,
+            },
+          }),
+        });
+        showToast(paymentStatusForPDF === "Paid" ? "Payment successful! Invoice sent." : "Order placed! Confirmation sent.", "success");
+      } catch (error) {
+        console.error("Email error:", error);
+        showToast("Failed to send order confirmation email", "error");
+      }
+    };
+    reader.readAsDataURL(pdfBlob);
+  };
+
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Basic form validation
+    if (!billingData.firstName || !billingData.lastName || !billingData.address || !billingData.town || !billingData.phone || !billingData.email) {
+      showToast("Please fill in all required billing details.", "error");
+      return;
+    }
+    if (cartItems.length === 0) {
+        showToast("Your cart is empty.", "warning");
+        return;
+    }
+
     if (paymentMethod === "cod") {
       try {
-        const { pdf, invoiceId } = await generateInvoicePDF("Cash On Delivery");
-        setInvoicePDF(pdf);
-        
         // Save COD order to MongoDB
-        try {
-          const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              billingData,
-              cartItems,
-              shippingFee,
-              grandTotal,
-              paymentStatus: "Cash On Delivery",
-            }),
-          });
+        const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            billingData,
+            cartItems,
+            shippingFee,
+            grandTotal,
+            paymentStatus: "Cash On Delivery", // Explicitly set
+            paymentMethod: "cod",
+          }),
+        });
 
-          if (!saveRes.ok) throw new Error("Failed to save COD order");
-        } catch (err) {
-          console.error("COD order save error:", err);
-          showToast("Failed to save order details", "error");
-          return;
+        if (!saveRes.ok) {
+            const errorData = await saveRes.json();
+            throw new Error(errorData.error || "Failed to save COD order");
         }
+        const savedOrderData = await saveRes.json();
+        await handleSuccessfulOrderPlacement(savedOrderData, "Cash On Delivery");
 
-        // Send email for COD order
-        const pdfBlob = pdf.output("blob");
-        const reader = new FileReader();
-      
-        reader.onloadend = async function () {
-          try {
-            const base64PDF = (reader.result as string).split(",")[1];
-      
-            await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: billingData.email,
-                subject: "Your Order Has Been Placed!",
-                html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
-                       <p>Your order has been placed successfully!</p>
-                       <p><strong>Payment Method:</strong> Cash On Delivery</p>
-                       <p><strong>Amount to Pay:</strong> ₹${grandTotal.toFixed(2)}</p>`,
-                attachment: {
-                  filename: `Invoice_${invoiceId}.pdf`,
-                  content: base64PDF,
-                },
-              }),
-            });
-
-            setShowDownloadButton(true);
-            showToast("Order placed successfully! You'll pay when your order arrives.", "success");
-          } catch (error) {
-            console.error("Email error:", error);
-            showToast("Failed to send order confirmation email", "error");
-          }
-        };
-      
-        reader.readAsDataURL(pdfBlob);
-      } catch (err) {
+      } catch (err: any) {
         console.error("COD order failed", err);
-        showToast("Order placement failed. Please try again.", "error");
+        showToast(err.message || "Order placement failed. Please try again.", "error");
       }
-    } else {
-      // Existing Razorpay payment logic
+    } else { // Razorpay
       const amountInPaise = Math.round(grandTotal * 100);
-
       try {
-        const res = await fetch("https://estore-backend-dyl3.onrender.com/api/create-order", {
+        const orderCreationRes = await fetch("https://estore-backend-dyl3.onrender.com/api/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ amount: amountInPaise }),
         });
 
-        if (!res.ok) throw new Error("Order creation failed");
-
-        const data = await res.json();
+        if (!orderCreationRes.ok) throw new Error("Razorpay order creation failed");
+        const orderDataFromRazorpay = await orderCreationRes.json();
 
         const options = {
-          key: "rzp_test_0rqSTvIDKUiY3m",
-          amount: data.amount,
+          key: "rzp_test_0rqSTvIDKUiY3m", // Replace with your actual key
+          amount: orderDataFromRazorpay.amount,
           currency: "INR",
           name: "Estore Online",
           description: "Order Payment",
-          order_id: data.id,
+          order_id: orderDataFromRazorpay.id,
           handler: async function (response: any) {
-            const { pdf, invoiceId } = await generateInvoicePDF("Paid");
-            setInvoicePDF(pdf);
-            
+            // Payment successful, now save to DB
             try {
               const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
                 method: "POST",
@@ -277,49 +401,25 @@ const Checkout = () => {
                   cartItems,
                   shippingFee,
                   grandTotal,
-                  paymentStatus: "Paid",
+                  paymentStatus: "Paid", // Explicitly set
+                  paymentMethod: "razorpay",
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
                 }),
               });
 
-              if (!saveRes.ok) throw new Error("Failed to save invoice");
-            } catch (err) {
-              console.error("Invoice save error:", err);
-              showToast("Failed to save invoice details", "error");
-              return;
-            }
-
-            const pdfBlob = pdf.output("blob");
-            const reader = new FileReader();
-          
-            reader.onloadend = async function () {
-              try {
-                const base64PDF = (reader.result as string).split(",")[1];
-            
-                await fetch("https://estore-backend-dyl3.onrender.com/api/send-email", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    to: billingData.email,
-                    subject: "Thank You for Your Purchase!",
-                    html: `<p>Hi <strong>${billingData.firstName}</strong>,</p>
-                           <p>Thanks for shopping with us!</p>
-                           <p><strong>Amount Paid:</strong> ₹${grandTotal.toFixed(2)}</p>`,
-                    attachment: {
-                      filename: `Invoice_${invoiceId}.pdf`,
-                      content: base64PDF,
-                    },
-                  }),
-                });
-
-                setShowDownloadButton(true);
-                showToast("Payment successful! Invoice is ready to download.", "success");
-              } catch (error) {
-                console.error("Email error:", error);
-                showToast("Failed to send payment confirmation email", "error");
+              if (!saveRes.ok) {
+                const errorData = await saveRes.json();
+                throw new Error(errorData.error || "Failed to save invoice after payment");
               }
-            };
-          
-            reader.readAsDataURL(pdfBlob);
+              const savedOrderData = await saveRes.json();
+              await handleSuccessfulOrderPlacement(savedOrderData, "Paid");
+
+            } catch (err: any) {
+              console.error("Invoice save error after Razorpay:", err);
+              showToast(err.message || "Failed to save order details after payment.", "error");
+            }
           },
           prefill: {
             name: billingData.firstName + " " + billingData.lastName,
@@ -327,26 +427,122 @@ const Checkout = () => {
             contact: billingData.phone,
           },
           theme: { color: "#0d6efd" },
+          modal: {
+            ondismiss: function() {
+              showToast("Payment was cancelled.", "warning");
+            }
+          }
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any){
+            console.error("Razorpay payment failed:", response.error);
+            showToast(`Payment failed: ${response.error.description}`, "error");
+             // Save failed payment attempt if needed
+            fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  billingData,
+                  cartItems,
+                  shippingFee,
+                  grandTotal,
+                  paymentStatus: "Failed",
+                  paymentMethod: "razorpay",
+                  razorpayOrderId: orderDataFromRazorpay.id, // order_id from create-order step
+                  // Include other relevant details like error code if available
+                  // razorpayErrorCode: response.error.code,
+                  // razorpayErrorDescription: response.error.description,
+                }),
+              }).catch(err => console.error("Error saving failed payment attempt:", err));
+        });
         rzp.open();
-      } catch (err) {
+      } catch (err: any) {
         console.error("Payment failed", err);
-        showToast("Payment failed. Please try again.", "error");
+        showToast(err.message || "Payment initiation failed. Please try again.", "error");
       }
     }
   };
 
+  // Active step for the Stepper
+  const activeStep = ORDER_STATUSES.indexOf(currentOrderStatus);
+
+  if (paymentSuccessful) {
+    return (
+      <>
+        <Breadcrumb title={"Order Tracking"} pages={["checkout", "tracking"]} />
+        <section className="overflow-hidden py-20 bg-gray-2">
+          <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
+            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: 'white', borderRadius: '10px', boxShadow: 1 }}>
+              <Typography variant="h4" gutterBottom sx={{ color: 'green', fontWeight: 'bold' }}>
+                {paymentMethod === "cod" ? "Order Placed Successfully!" : "Payment Successful!"}
+              </Typography>
+              <Typography variant="h6" gutterBottom>
+                Your Order ID: {currentOrderId}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 4 }}>
+                Thank you for your purchase. You can track the status of your order below.
+              </Typography>
+
+              {loadingOrderStatus && <CircularProgress sx={{my: 2}}/>}
+              
+              {!loadingOrderStatus && currentOrderId && (
+                <Box sx={{ width: '100%', my: 4 }}>
+                    <Stepper alternativeLabel activeStep={activeStep} connector={<QontoConnector />}>
+                        {ORDER_STATUSES.map((label) => (
+                        <Step key={label}>
+                            <StepLabel StepIconComponent={QontoStepIcon}>{label}</StepLabel>
+                        </Step>
+                        ))}
+                    </Stepper>
+                </Box>
+              )}
+
+              {currentOrderStatus === "Delivered" && (
+                <Typography variant="h6" sx={{ color: 'primary.main', my: 2 }}>
+                    Your order has been delivered. Thank you for shopping with us!
+                </Typography>
+              )}
+
+              {showDownloadButton && invoicePDF && currentOrderId && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={downloadInvoice}
+                  sx={{ mt: 2, py: 1.5, fontWeight: 500 }}
+                >
+                  Download Invoice
+                </Button>
+              )}
+               <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => window.location.href = '/products'} // Navigate to products page or home
+                  sx={{ mt: 2, ml: showDownloadButton ? 2 : 0, py: 1.5, fontWeight: 500 }}
+                >
+                  Continue Shopping
+                </Button>
+            </Box>
+          </div>
+        </section>
+        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{ zIndex: 9999 }}>
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
+        </Snackbar>
+      </>
+    );
+  }
+
+  // Original Checkout Form UI
   return (
     <>
       <Breadcrumb title={"Checkout"} pages={["checkout"]} />
       <section className="overflow-hidden py-20 bg-gray-2">
         <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-          <form>
+          {/* Prevent form submission if payment is successful (though UI changes) */}
+          <form onSubmit={paymentSuccessful ? (e) => e.preventDefault() : handlePayment}>
             <div className="flex flex-col lg:flex-row gap-7.5 xl:gap-11">
               <div className="lg:max-w-[670px] w-full">
-                <Login />
+                <Login /> {/* Assuming Login component handles its own state */}
                 <Billing formData={billingData} handleChange={handleBillingChange} />
               </div>
               <div className="max-w-[455px] w-full">
@@ -355,10 +551,7 @@ const Checkout = () => {
                     <h3 className="font-medium text-xl text-dark">Order Summary</h3>
                   </div>
                   <div className="pt-2.5 pb-8.5 px-4 sm:px-8.5">
-                    <div className="flex justify-between py-5 border-b border-gray-3">
-                      <h4 className="font-medium text-dark">Product</h4>
-                      <h4 className="font-medium text-dark text-right">Subtotal</h4>
-                    </div>
+                    {/* Cart items display - as in your existing code */}
                     {cartItems.map((item, index) => (
                       <div key={index} className="flex justify-between py-5 border-b border-gray-3">
                         <p className="text-dark">
@@ -388,6 +581,7 @@ const Checkout = () => {
                           <input
                             type="radio"
                             name="paymentMethod"
+                            value="razorpay"
                             checked={paymentMethod === "razorpay"}
                             onChange={() => setPaymentMethod("razorpay")}
                             className="w-4 h-4"
@@ -398,6 +592,7 @@ const Checkout = () => {
                           <input
                             type="radio"
                             name="paymentMethod"
+                            value="cod"
                             checked={paymentMethod === "cod"}
                             onChange={() => setPaymentMethod("cod")}
                             className="w-4 h-4"
@@ -408,87 +603,42 @@ const Checkout = () => {
                     </div>
                   </div>
                 </div>
-                {paymentMethod === "razorpay" ? (
-                  <button
-                    type="button"
-                    onClick={handlePayment}
+                
+                {/* Payment Button - type="submit" to trigger form's onSubmit */}
+                 <button
+                    type="submit" // Changed to submit
+                    // onClick={handlePayment} // onClick is handled by form's onSubmit
+                    disabled={cartItems.length === 0} // Disable if cart is empty
                     style={{
                       width: '100%',
                       display: 'flex',
                       justifyContent: 'center',
                       fontWeight: 500,
                       color: 'white',
-                      backgroundColor: '#2563eb',
+                      backgroundColor: paymentMethod === "razorpay" ? '#2563eb' : '#16a34a',
                       padding: '12px 24px',
                       borderRadius: '6px',
                       transition: 'background-color 200ms ease-out',
                       marginTop: '30px',
                       border: 'none',
-                      cursor: 'pointer'
+                      cursor: cartItems.length === 0 ? 'not-allowed' : 'pointer',
+                      opacity: cartItems.length === 0 ? 0.6 : 1,
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = paymentMethod === "razorpay" ? '#1d4ed8' : '#15803d'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = paymentMethod === "razorpay" ? '#2563eb' : '#16a34a'}
                   >
-                    Pay Now
+                    {paymentMethod === "razorpay" ? 'Pay Now' : 'Place Order (Cash On Delivery)'}
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handlePayment}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      fontWeight: 500,
-                      color: 'white',
-                      backgroundColor: '#16a34a',
-                      padding: '12px 24px',
-                      borderRadius: '6px',
-                      transition: 'background-color 200ms ease-out',
-                      marginTop: '30px',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
-                  >
-                    Place Order (Cash On Delivery)
-                  </button>
-                )}
-                {showDownloadButton && (
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={downloadInvoice}
-                    fullWidth
-                    sx={{
-                      mt: 2,
-                      py: 1.5,
-                      fontWeight: 500,
-                    }}
-                  >
-                    Download Invoice
-                  </Button>
-                )}
+
+                {/* Download button is now part of the success UI */}
               </div>
             </div>
           </form>
         </div>
       </section>
 
-      {/* MUI Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ zIndex: 9999 }} // Ensure it's on top of everything
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{ zIndex: 9999 }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
