@@ -471,62 +471,199 @@ const Checkout = () => {
     return (
       <>
         <Breadcrumb title={"Order Tracking"} pages={["checkout", "tracking"]} />
-        <section className="overflow-hidden py-20 bg-gray-2">
-          <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: 'white', borderRadius: '10px', boxShadow: 1 }}>
-              <Typography variant="h4" gutterBottom sx={{ color: 'green', fontWeight: 'bold' }}>
-                {paymentMethod === "cod" ? "Order Placed Successfully!" : "Payment Successful!"}
+        <section className="overflow-hidden py-20 bg-gray-2 min-h-screen flex items-center">
+          <div className="max-w-2xl w-full mx-auto px-4 sm:px-8 xl:px-0">
+            <Box
+              sx={{
+                textAlign: 'center',
+                p: { xs: 2, sm: 4 },
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)',
+                borderRadius: '18px',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid #e0e7ff',
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1,
+                  mb: 3,
+                }}
+              >
+                <Box
+                  sx={{
+                    background: paymentMethod === "cod" ? 'linear-gradient(90deg,#16a34a,#22d3ee)' : 'linear-gradient(90deg,#2563eb,#9333ea)',
+                    borderRadius: '50%',
+                    width: 70,
+                    height: 70,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 1,
+                    boxShadow: '0 4px 16px 0 rgba(59,130,246,0.12)',
+                  }}
+                >
+                  <Check sx={{ fontSize: 40, color: 'white' }} />
+                </Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: paymentMethod === "cod" ? '#16a34a' : '#2563eb',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {paymentMethod === "cod" ? "Order Placed Successfully!" : "Payment Successful!"}
+                </Typography>
+              </Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 500,
+                  color: '#334155',
+                  mb: 1,
+                  wordBreak: 'break-all',
+                }}
+              >
+                Order ID: <span style={{ color: '#6366f1', fontWeight: 700 }}>{currentOrderId}</span>
               </Typography>
-              <Typography variant="h6" gutterBottom>
-                Your Order ID: {currentOrderId}
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 4 }}>
-                Thank you for your purchase. You can track the status of your order below.
+              <Typography
+                variant="body1"
+                sx={{
+                  mb: 4,
+                  color: '#64748b',
+                  fontSize: { xs: 15, sm: 16 },
+                }}
+              >
+                Thank you for your purchase! Track your order status below.
               </Typography>
 
-              {loadingOrderStatus && <CircularProgress sx={{my: 2}}/>}
-              
-              {!loadingOrderStatus && currentOrderId && (
-                <Box sx={{ width: '100%', my: 4 }}>
-                    <Stepper alternativeLabel activeStep={activeStep} connector={<QontoConnector />}>
-                        {ORDER_STATUSES.map((label) => (
+              <Box sx={{ width: '100%', my: 4 }}>
+                {loadingOrderStatus ? (
+                  <CircularProgress sx={{ my: 2, color: '#6366f1' }} />
+                ) : (
+                  currentOrderId && (
+                    <Stepper
+                      alternativeLabel
+                      activeStep={activeStep}
+                      connector={<QontoConnector />}
+                      sx={{
+                        '& .MuiStepLabel-label': {
+                          fontWeight: 500,
+                          color: '#334155',
+                          fontSize: { xs: 13, sm: 15 },
+                        },
+                        '& .MuiStepIcon-root': {
+                          color: '#e0e7ff',
+                        },
+                      }}
+                    >
+                      {ORDER_STATUSES.map((label) => (
                         <Step key={label}>
-                            <StepLabel StepIconComponent={QontoStepIcon}>{label}</StepLabel>
+                          <StepLabel StepIconComponent={QontoStepIcon}>{label}</StepLabel>
                         </Step>
-                        ))}
+                      ))}
                     </Stepper>
+                  )
+                )}
+              </Box>
+
+              {currentOrderStatus === "Delivered" && (
+                <Box
+                  sx={{
+                    background: 'linear-gradient(90deg,#a7f3d0,#fef9c3)',
+                    borderRadius: '8px',
+                    p: 2,
+                    my: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <Check sx={{ color: '#16a34a', fontSize: 24 }} />
+                  <Typography variant="subtitle1" sx={{ color: '#16a34a', fontWeight: 600 }}>
+                    Your order has been delivered. Thank you for shopping with us!
+                  </Typography>
                 </Box>
               )}
 
-              {currentOrderStatus === "Delivered" && (
-                <Typography variant="h6" sx={{ color: 'primary.main', my: 2 }}>
-                    Your order has been delivered. Thank you for shopping with us!
-                </Typography>
-              )}
-
-              {showDownloadButton && invoicePDF && currentOrderId && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 2,
+                  justifyContent: 'center',
+                  mt: 4,
+                }}
+              >
+                {showDownloadButton && invoicePDF && currentOrderId && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={downloadInvoice}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 600,
+                      fontSize: 16,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px 0 rgba(99,102,241,0.08)',
+                      background: 'linear-gradient(90deg,#6366f1,#a21caf)',
+                      color: 'white',
+                      '&:hover': {
+                        background: 'linear-gradient(90deg,#4f46e5,#7c3aed)',
+                      },
+                      width: { xs: '100%', sm: 'auto' },
+                    }}
+                    startIcon={
+                      <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                        <path d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    }
+                  >
+                    Download Invoice
+                  </Button>
+                )}
                 <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={downloadInvoice}
-                  sx={{ mt: 2, py: 1.5, fontWeight: 500 }}
-                >
-                  Download Invoice
-                </Button>
-              )}
-               <Button
                   variant="outlined"
                   color="primary"
-                  onClick={() => window.location.href = '/products'} // Navigate to products page or home
-                  sx={{ mt: 2, ml: showDownloadButton ? 2 : 0, py: 1.5, fontWeight: 500 }}
+                  onClick={() => window.location.href = '/products'}
+                  sx={{
+                    py: 1.5,
+                    fontWeight: 600,
+                    fontSize: 16,
+                    borderRadius: '8px',
+                    borderColor: '#6366f1',
+                    color: '#6366f1',
+                    '&:hover': {
+                      background: '#6366f1',
+                      color: 'white',
+                      borderColor: '#6366f1',
+                    },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
                 >
                   Continue Shopping
                 </Button>
+              </Box>
             </Box>
           </div>
         </section>
-        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{ zIndex: 9999 }}>
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          sx={{ zIndex: 9999 }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
         </Snackbar>
       </>
     );
