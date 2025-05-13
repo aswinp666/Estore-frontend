@@ -53,13 +53,13 @@ const Header = () => {
 
   const options = [
     { label: "All Categories", value: "0" },
-    { label: "Desktop", value: "1" },
-    { label: "Laptop", value: "2" },
-    { label: "Monitor", value: "3" },
-    { label: "Phone", value: "4" },
-    { label: "Watch", value: "5" },
-    { label: "Mouse", value: "6" },
-    { label: "Tablet", value: "7" },
+    { label: "TV", value: "1" },
+    { label: "Mobile", value: "2" },
+    { label: "Consoles", value: "3" },
+    { label: "Earpods", value: "4" },
+    { label: "Tablets", value: "5" },
+    { label: "Camera", value: "6" },
+    { label: "Groceries", value: "7" },
   ];
 
   return (
@@ -252,9 +252,6 @@ const Header = () => {
                     <span className="block text-2xs text-dark-4 uppercase">
                       cart
                     </span>
-                    <p className="font-medium text-custom-sm text-dark">
-                      ${totalPrice}
-                    </p>
                   </div>
                 </button>
               </div>
