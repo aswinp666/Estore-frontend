@@ -3,11 +3,7 @@ import React, { useState, useEffect } from "react";
 import Breadcrumb from "../Common/Breadcrumb";
 import CustomSelect from "./CustomSelect";
 import CategoryDropdown from "./CategoryDropdown";
-import GenderDropdown from "./GenderDropdown";
-import SizeDropdown from "./SizeDropdown";
-import ColorsDropdwon from "./ColorsDropdwon";
 import PriceDropdown from "./PriceDropdown";
-import shopData from "../Shop/shopData";
 import SingleGridItem from "../Shop/SingleGridItem";
 import SingleListItem from "../Shop/SingleListItem";
 import { 
@@ -22,6 +18,48 @@ const ShopWithSidebar = () => {
   const [productStyle, setProductStyle] = useState("grid");
   const [productSidebar, setProductSidebar] = useState(false);
   const [stickyMenu, setStickyMenu] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 9;
+
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://estore-backend-dyl3.onrender.com/api/products'); // Adjust this endpoint as needed
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        setProducts(data);
+        setFilteredProducts(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Filter products based on selected category
+  useEffect(() => {
+    if (selectedCategory === "All") {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter(
+        (product) => product.category === selectedCategory
+      );
+      setFilteredProducts(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, [selectedCategory, products]);
 
   const handleStickyMenu = () => {
     if (window.scrollY >= 80) {
@@ -37,53 +75,45 @@ const ShopWithSidebar = () => {
     { label: "Old Products", value: "2" },
   ];
 
+  // Generate categories from products data
+  const generateCategories = () => {
+    const categoryCounts = {};
+    
+    products.forEach((product) => {
+      if (categoryCounts[product.category]) {
+        categoryCounts[product.category]++;
+      } else {
+        categoryCounts[product.category] = 1;
+      }
+    });
+
+    return Object.keys(categoryCounts).map((category) => ({
+      name: category,
+      products: categoryCounts[category],
+      isRefined: category === selectedCategory,
+    }));
+  };
+
   const categories = [
-    {
-      name: "TV",
-      products: 10,
-      isRefined: true,
-    },
-    {
-      name: "Mobile",
-      products: 12,
-      isRefined: false,
-    },
-    {
-      name: "Consoles",
-      products: 30,
-      isRefined: false,
-    },
-    {
-      name: "Earpods",
-      products: 23,
-      isRefined: false,
-    },
-    {
-      name: "Tablets",
-      products: 10,
-      isRefined: false,
-    },
-    {
-      name: "Camera",
-      products: 13,
-      isRefined: false,
-    },
+    { name: "All", products: products.length, isRefined: selectedCategory === "All" },
+    ...generateCategories()
   ];
 
-  const genders = [
-    {
-      name: "Men",
-      products: 10,
-    },
-    {
-      name: "Women",
-      products: 23,
-    },
-    {
-      name: "Unisex",
-      products: 8,
-    },
-  ];
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+  };
+
+  // Pagination logic
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
@@ -103,6 +133,9 @@ const ShopWithSidebar = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   });
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <>
@@ -139,30 +172,33 @@ const ShopWithSidebar = () => {
                   <div className="bg-white shadow-1 rounded-lg py-4 px-5">
                     <div className="flex items-center justify-between">
                       <p>Filters:</p>
-                      <button className="text-blue">Clean All</button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory("All");
+                        }}
+                        className="text-blue"
+                      >
+                        Clean All
+                      </button>
                     </div>
                   </div>
 
                   {/* <!-- category box --> */}
-                  <CategoryDropdown categories={categories} />
+                  <CategoryDropdown 
+                    categories={categories} 
+                    onSelectCategory={handleCategorySelect}
+                    selectedCategory={selectedCategory}
+                  />
 
-                  {/* <!-- gender box --> */}
-                  <GenderDropdown genders={genders} />
-
-                  {/* // <!-- size box --> */}
-                  <SizeDropdown />
-
-                  {/* // <!-- color box --> */}
-                  <ColorsDropdwon />
-
-                  {/* // <!-- price range box --> */}
+                  {/* <!-- price range box --> */}
                   <PriceDropdown />
                 </div>
               </form>
             </div>
-            {/* // <!-- Sidebar End --> */}
+            {/* <!-- Sidebar End --> */}
 
-            {/* // <!-- Content Start --> */}
+            {/* <!-- Content Start --> */}
             <div className="xl:max-w-[870px] w-full">
               <div className="rounded-lg bg-white shadow-1 pl-3 pr-2.5 py-2.5 mb-6">
                 <div className="flex items-center justify-between">
@@ -171,8 +207,9 @@ const ShopWithSidebar = () => {
                     <CustomSelect options={options} />
 
                     <p>
-                      Showing <span className="text-dark">9 of 50</span>{" "}
-                      Products
+                      Showing <span className="text-dark">
+                        {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)}
+                      </span> of <span className="text-dark">{filteredProducts.length}</span> Products
                     </p>
                   </div>
 
@@ -213,7 +250,7 @@ const ShopWithSidebar = () => {
                     : "flex flex-col gap-7.5"
                 }`}
               >
-                {shopData.map((item, key) =>
+                {currentProducts.map((item, key) =>
                   productStyle === "grid" ? (
                     <SingleGridItem item={item} key={key} />
                   ) : (
@@ -224,100 +261,59 @@ const ShopWithSidebar = () => {
               {/* <!-- Products Grid Tab Content End --> */}
 
               {/* <!-- Products Pagination Start --> */}
-              <div className="flex justify-center mt-15">
-                <div className="bg-white shadow-1 rounded-md p-2">
-                  <ul className="flex items-center">
-                    <li>
-                      <button
-                        id="paginationLeft"
-                        aria-label="button for pagination left"
-                        type="button"
-                        disabled
-                        className="flex items-center justify-center w-8 h-9 ease-out duration-200 rounded-[3px disabled:text-gray-4"
-                      >
-                        <FiChevronLeft className="text-current" size={18} />
-                      </button>
-                    </li>
+              {filteredProducts.length > productsPerPage && (
+                <div className="flex justify-center mt-15">
+                  <div className="bg-white shadow-1 rounded-md p-2">
+                    <ul className="flex items-center">
+                      <li>
+                        <button
+                          onClick={() => paginate(currentPage - 1)}
+                          aria-label="button for pagination left"
+                          type="button"
+                          disabled={currentPage === 1}
+                          className={`flex items-center justify-center w-8 h-9 ease-out duration-200 rounded-[3px] ${
+                            currentPage === 1 ? "text-gray-4" : "hover:text-white hover:bg-blue"
+                          }`}
+                        >
+                          <FiChevronLeft className="text-current" size={18} />
+                        </button>
+                      </li>
 
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] bg-blue text-white hover:text-white hover:bg-blue"
-                      >
-                        1
-                      </a>
-                    </li>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                        <li key={number}>
+                          <button
+                            onClick={() => paginate(number)}
+                            className={`flex py-1.5 px-3.5 duration-200 rounded-[3px] ${
+                              currentPage === number
+                                ? "bg-blue text-white"
+                                : "hover:text-white hover:bg-blue"
+                            }`}
+                          >
+                            {number}
+                          </button>
+                        </li>
+                      ))}
 
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        2
-                      </a>
-                    </li>
-
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        3
-                      </a>
-                    </li>
-
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        4
-                      </a>
-                    </li>
-
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        5
-                      </a>
-                    </li>
-
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        ...
-                      </a>
-                    </li>
-
-                    <li>
-                      <a
-                        href="#"
-                        className="flex py-1.5 px-3.5 duration-200 rounded-[3px] hover:text-white hover:bg-blue"
-                      >
-                        10
-                      </a>
-                    </li>
-
-                    <li>
-                      <button
-                        id="paginationLeft"
-                        aria-label="button for pagination left"
-                        type="button"
-                        className="flex items-center justify-center w-8 h-9 ease-out duration-200 rounded-[3px] hover:text-white hover:bg-blue disabled:text-gray-4"
-                      >
-                        <FiChevronRight className="text-current" size={18} />
-                      </button>
-                    </li>
-                  </ul>
+                      <li>
+                        <button
+                          onClick={() => paginate(currentPage + 1)}
+                          aria-label="button for pagination right"
+                          type="button"
+                          disabled={currentPage === totalPages}
+                          className={`flex items-center justify-center w-8 h-9 ease-out duration-200 rounded-[3px] ${
+                            currentPage === totalPages ? "text-gray-4" : "hover:text-white hover:bg-blue"
+                          }`}
+                        >
+                          <FiChevronRight className="text-current" size={18} />
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              )}
               {/* <!-- Products Pagination End --> */}
             </div>
-            {/* // <!-- Content End --> */}
+            {/* <!-- Content End --> */}
           </div>
         </div>
       </section>

@@ -2,14 +2,34 @@
 
 import { useState } from "react";
 
-const CategoryItem = ({ category }) => {
-  const [selected, setSelected] = useState(false);
+// Define type for categories
+type Category = {
+  name: string;
+  products: number;
+  isRefined?: boolean;
+};
+
+type CategoryDropdownProps = {
+  categories: Category[];
+  onSelectCategory: (category: string | null) => void;
+  selectedCategory: string | null;
+};
+
+const CategoryItem = ({
+  category,
+  onSelectCategory,
+  selected,
+}: {
+  category: Category;
+  onSelectCategory: (category: string | null) => void;
+  selected: boolean;
+}) => {
   return (
     <button
       className={`${
         selected && "text-blue"
       } group flex items-center justify-between ease-out duration-200 hover:text-blue `}
-      onClick={() => setSelected(!selected)}
+      onClick={() => onSelectCategory(selected ? null : category.name)}
     >
       <div className="flex items-center gap-2">
         <div
@@ -49,7 +69,11 @@ const CategoryItem = ({ category }) => {
   );
 };
 
-const CategoryDropdown = ({ categories }) => {
+const CategoryDropdown = ({
+  categories,
+  onSelectCategory,
+  selectedCategory,
+}: CategoryDropdownProps) => {
   const [toggleDropdown, setToggleDropdown] = useState(true);
 
   return (
@@ -89,14 +113,19 @@ const CategoryDropdown = ({ categories }) => {
       </div>
 
       {/* dropdown && 'shadow-filter */}
-      {/* <!-- dropdown menu --> */}
+      {/* dropdown menu */}
       <div
         className={`flex-col gap-3 py-6 pl-6 pr-5.5 ${
           toggleDropdown ? "flex" : "hidden"
         }`}
       >
         {categories.map((category, key) => (
-          <CategoryItem key={key} category={category} />
+          <CategoryItem
+            key={key}
+            category={category}
+            onSelectCategory={onSelectCategory}
+            selected={category.name === selectedCategory}
+          />
         ))}
       </div>
     </div>
