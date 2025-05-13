@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import { useAppSelector } from "@/redux/store";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
+import { Snackbar, Alert, Button } from "@mui/material";
 
 const Checkout = () => {
   const cartItems = useAppSelector((state) => state.cartReducer.items);
@@ -16,6 +17,15 @@ const Checkout = () => {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
+  const [invoicePDF, setInvoicePDF] = useState<jsPDF | null>(null);
+  const [showDownloadButton, setShowDownloadButton] = useState(false);
+  
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "warning" | "info",
+  });
 
   const [billingData, setBillingData] = useState({
     firstName: "",
@@ -40,6 +50,18 @@ const Checkout = () => {
     script.async = true;
     document.body.appendChild(script);
   }, []);
+
+  const showToast = (message: string, severity: "success" | "error" | "warning" | "info") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
 
   const generateInvoicePDF = async (paymentStatus: "Paid" | "Cash On Delivery") => {
     const pdf = new jsPDF("p", "mm", "a4");
@@ -146,12 +168,20 @@ const Checkout = () => {
     return { pdf, invoiceId };
   };
 
+  const downloadInvoice = () => {
+    if (invoicePDF) {
+      invoicePDF.save(`Invoice_${invoiceNumber}.pdf`);
+      setShowDownloadButton(false);
+    }
+  };
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (paymentMethod === "cod") {
       try {
         const { pdf, invoiceId } = await generateInvoicePDF("Cash On Delivery");
+        setInvoicePDF(pdf);
         
         // Save COD order to MongoDB
         try {
@@ -168,9 +198,10 @@ const Checkout = () => {
           });
 
           if (!saveRes.ok) throw new Error("Failed to save COD order");
-          console.log("COD order saved successfully!");
         } catch (err) {
           console.error("COD order save error:", err);
+          showToast("Failed to save order details", "error");
+          return;
         }
 
         // Send email for COD order
@@ -198,17 +229,18 @@ const Checkout = () => {
               }),
             });
 
-            pdf.save(`Invoice_${invoiceId}.pdf`);
-            alert("Order placed successfully! You'll pay when your order arrives.");
+            setShowDownloadButton(true);
+            showToast("Order placed successfully! You'll pay when your order arrives.", "success");
           } catch (error) {
             console.error("Email error:", error);
+            showToast("Failed to send order confirmation email", "error");
           }
         };
       
         reader.readAsDataURL(pdfBlob);
       } catch (err) {
         console.error("COD order failed", err);
-        alert("Order placement failed. Please try again.");
+        showToast("Order placement failed. Please try again.", "error");
       }
     } else {
       // Existing Razorpay payment logic
@@ -233,9 +265,8 @@ const Checkout = () => {
           description: "Order Payment",
           order_id: data.id,
           handler: async function (response: any) {
-            alert("Payment successful!");
-          
             const { pdf, invoiceId } = await generateInvoicePDF("Paid");
+            setInvoicePDF(pdf);
             
             try {
               const saveRes = await fetch("https://estore-backend-dyl3.onrender.com/api/invoice/save", {
@@ -251,9 +282,10 @@ const Checkout = () => {
               });
 
               if (!saveRes.ok) throw new Error("Failed to save invoice");
-              console.log("Invoice saved successfully!");
             } catch (err) {
               console.error("Invoice save error:", err);
+              showToast("Failed to save invoice details", "error");
+              return;
             }
 
             const pdfBlob = pdf.output("blob");
@@ -279,9 +311,11 @@ const Checkout = () => {
                   }),
                 });
 
-                pdf.save(`Invoice_${invoiceId}.pdf`);
+                setShowDownloadButton(true);
+                showToast("Payment successful! Invoice is ready to download.", "success");
               } catch (error) {
                 console.error("Email error:", error);
+                showToast("Failed to send payment confirmation email", "error");
               }
             };
           
@@ -299,7 +333,7 @@ const Checkout = () => {
         rzp.open();
       } catch (err) {
         console.error("Payment failed", err);
-        alert("Payment failed. Please try again.");
+        showToast("Payment failed. Please try again.", "error");
       }
     }
   };
@@ -374,58 +408,90 @@ const Checkout = () => {
                     </div>
                   </div>
                 </div>
-{paymentMethod === "razorpay" ? (
-  <button
-    type="button"
-    onClick={handlePayment}
-    style={{
-      width: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      fontWeight: 500,
-      color: 'white',
-      backgroundColor: '#2563eb', // blue-600
-      padding: '12px 24px',
-      borderRadius: '6px',
-      transition: 'background-color 200ms ease-out',
-      marginTop: '30px',
-      border: 'none',
-      cursor: 'pointer'
-    }}
-    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'} // blue-700
-    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'} // blue-600
-  >
-    Pay Now
-  </button>
-) : (
-  <button
-    type="button"
-    onClick={handlePayment}
-    style={{
-      width: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      fontWeight: 500,
-      color: 'white',
-      backgroundColor: '#16a34a', // green-600
-      padding: '12px 24px',
-      borderRadius: '6px',
-      transition: 'background-color 200ms ease-out',
-      marginTop: '30px',
-      border: 'none',
-      cursor: 'pointer'
-    }}
-    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'} // green-700
-    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'} // green-600
-  >
-    Place Order (Cash On Delivery)
-  </button>
-)}
+                {paymentMethod === "razorpay" ? (
+                  <button
+                    type="button"
+                    onClick={handlePayment}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      fontWeight: 500,
+                      color: 'white',
+                      backgroundColor: '#2563eb',
+                      padding: '12px 24px',
+                      borderRadius: '6px',
+                      transition: 'background-color 200ms ease-out',
+                      marginTop: '30px',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                  >
+                    Pay Now
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePayment}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      fontWeight: 500,
+                      color: 'white',
+                      backgroundColor: '#16a34a',
+                      padding: '12px 24px',
+                      borderRadius: '6px',
+                      transition: 'background-color 200ms ease-out',
+                      marginTop: '30px',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+                  >
+                    Place Order (Cash On Delivery)
+                  </button>
+                )}
+                {showDownloadButton && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={downloadInvoice}
+                    fullWidth
+                    sx={{
+                      mt: 2,
+                      py: 1.5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Download Invoice
+                  </Button>
+                )}
               </div>
             </div>
           </form>
         </div>
       </section>
+
+      {/* MUI Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ zIndex: 9999 }} // Ensure it's on top of everything
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
