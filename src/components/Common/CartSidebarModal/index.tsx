@@ -1,16 +1,89 @@
 "use client";
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation"; // ✅ App Router version
-
+import { useRouter } from "next/navigation";
 import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import {
   removeItemFromCart,
+  updateCartItemQuantity,
   selectTotalPrice,
 } from "@/redux/features/cart-slice";
 import { useAppSelector } from "@/redux/store";
-import { useSelector } from "react-redux";
-import SingleItem from "./SingleItem";
-import EmptyCart from "./EmptyCart";
+import { useSelector, useDispatch } from "react-redux";
+import Image from "next/image";
+
+const SingleItem = ({ item }) => {
+  const dispatch = useDispatch();
+
+  const handleRemoveFromCart = () => {
+    dispatch(removeItemFromCart(item.id));
+  };
+
+  const handleIncreaseQuantity = () => {
+    dispatch(updateCartItemQuantity({ id: item.id, quantity: item.quantity + 1 }));
+  };
+
+  const handleDecreaseQuantity = () => {
+    if (item.quantity > 1) {
+      dispatch(updateCartItemQuantity({ id: item.id, quantity: item.quantity - 1 }));
+    }
+  };
+
+  return (
+    <div className="flex items-center border-t border-gray-3 py-5 px-7.5">
+      <div className="min-w-[400px]">
+        <div className="flex items-center justify-between gap-5">
+          <div className="w-full flex items-center gap-5.5">
+            <div className="flex items-center justify-center rounded-[5px] bg-gray-2 max-w-[80px] w-full h-17.5">
+              <Image width={80} height={80} src={item.imageUrl} alt="product" />
+            </div>
+            <div>
+              <h3 className="text-dark ease-out duration-200 hover:text-blue">
+                <a href="#">{item.name}</a>
+              </h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="min-w-[180px]">
+        <p className="text-dark">₹{item.price}</p>
+      </div>
+
+      <div className="min-w-[275px]">
+        <div className="w-max flex items-center rounded-md border border-gray-3">
+          <button
+            onClick={handleDecreaseQuantity}
+            className="flex items-center justify-center w-11.5 h-11.5 hover:text-blue"
+          >
+            –
+          </button>
+          <span className="flex items-center justify-center w-16 h-11.5 border-x border-gray-4">
+            {item.quantity}
+          </span>
+          <button
+            onClick={handleIncreaseQuantity}
+            className="flex items-center justify-center w-11.5 h-11.5 hover:text-blue"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div className="min-w-[200px]">
+        <p className="text-dark">₹{item.discountedPrice * item.quantity}</p>
+      </div>
+
+      <div className="min-w-[50px] flex justify-end">
+        <button
+          onClick={handleRemoveFromCart}
+          className="rounded-lg max-w-[38px] h-9.5 bg-gray-2 border border-gray-3 text-dark hover:bg-red-100 hover:text-red"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const CartSidebarModal = () => {
   const { isCartModalOpen, closeCartModal } = useCartModalContext();
@@ -38,79 +111,47 @@ const CartSidebarModal = () => {
     closeCartModal();
     setTimeout(() => {
       router.push(path);
-    }, 100); // slight delay to let modal close smoothly
+    }, 100);
   };
 
   return (
     <div
-      className={`fixed top-0 left-0 z-99999 overflow-y-auto no-scrollbar w-full h-screen bg-dark/70 ease-linear duration-300 ${
+      className={`fixed top-0 left-0 z-50 w-full h-screen bg-black/60 transition-all ${
         isCartModalOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
-      <div className="flex items-center justify-end">
-        <div className="w-full max-w-[500px] shadow-1 bg-white px-4 sm:px-7.5 lg:px-11 relative modal-content">
-          <div className="sticky top-0 bg-white flex items-center justify-between pb-7 pt-4 sm:pt-7.5 lg:pt-11 border-b border-gray-3 mb-7.5">
-            <h2 className="font-medium text-dark text-lg sm:text-2xl">
-              Cart View
-            </h2>
-            <button
-              onClick={closeCartModal}
-              aria-label="Close cart modal"
-              className="flex items-center justify-center ease-in duration-150 bg-meta text-dark-5 hover:text-dark"
-            >
-              <svg
-                className="fill-current"
-                width="30"
-                height="30"
-                viewBox="0 0 30 30"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12.5379 11.2121C12.1718 10.846 11.5782 10.846 11.212 11.2121C10.8459 11.5782 10.8459 12.1718 11.212 12.5379L13.6741 15L11.2121 17.4621C10.846 17.8282 10.846 18.4218 11.2121 18.7879C11.5782 19.154 12.1718 19.154 12.5379 18.7879L15 16.3258L17.462 18.7879C17.8281 19.154 18.4217 19.154 18.7878 18.7879C19.154 18.4218 19.154 17.8282 18.7878 17.462L16.3258 15L18.7879 12.5379C19.154 12.1718 19.154 11.5782 18.7879 11.2121C18.4218 10.846 17.8282 10.846 17.462 11.2121L15 13.6742L12.5379 11.2121Z"
-                />
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M15 1.5625C7.57867 1.5625 1.5625 7.57867 1.5625 15C1.5625 22.4213 7.57867 28.4375 15 28.4375C22.4213 28.4375 28.4375 22.4213 28.4375 15C28.4375 7.57867 22.4213 1.5625 15 1.5625ZM3.4375 15C3.4375 8.61421 8.61421 3.4375 15 3.4375C21.3858 3.4375 26.5625 8.61421 26.5625 15C26.5625 21.3858 21.3858 26.5625 15 26.5625C8.61421 26.5625 3.4375 21.3858 3.4375 15Z"
-                />
-              </svg>
+      <div className="flex justify-end h-full">
+        <div className="w-full max-w-[500px] bg-white p-5 shadow-lg relative modal-content">
+          <div className="flex justify-between items-center border-b pb-4 mb-4">
+            <h2 className="text-2xl font-semibold">Cart</h2>
+            <button onClick={closeCartModal} className="text-xl">
+              ✕
             </button>
           </div>
 
-          <div className="h-[66vh] overflow-y-auto no-scrollbar">
-            <div className="flex flex-col gap-6">
-              {cartItems.length > 0 ? (
-                cartItems.map((item, key) => (
-                  <SingleItem
-                    key={key}
-                    item={item}
-                    removeItemFromCart={removeItemFromCart}
-                  />
-                ))
-              ) : (
-                <EmptyCart />
-              )}
-            </div>
+          <div className="h-[60vh] overflow-y-auto">
+            {cartItems.length ? (
+              cartItems.map((item) => <SingleItem key={item._id} item={item} />)
+            ) : (
+              <p className="text-center text-gray-500 py-10">Your cart is empty.</p>
+            )}
           </div>
 
-          <div className="border-t border-gray-3 bg-white pt-5 pb-4 sm:pb-7.5 lg:pb-11 mt-7.5 sticky bottom-0">
-            <div className="flex items-center justify-between gap-5 mb-6">
-              <p className="font-medium text-xl text-dark">Subtotal:</p>
-              <p className="font-medium text-xl text-dark">₹{totalPrice}</p>
+          <div className="border-t pt-4 mt-4">
+            <div className="flex justify-between text-lg font-medium mb-4">
+              <span>Subtotal:</span>
+              <span>₹{totalPrice}</span>
             </div>
-
-            <div className="flex items-center gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => handleNavigate("/cart")}
-                className="w-full flex justify-center font-medium text-white bg-blue py-[13px] px-6 rounded-md ease-out duration-200 hover:bg-blue-dark"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
               >
                 View Cart
               </button>
-
               <button
                 onClick={() => handleNavigate("/checkout")}
-                className="w-full flex justify-center font-medium text-white bg-dark py-[13px] px-6 rounded-md ease-out duration-200 hover:bg-opacity-95"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 rounded-md"
               >
                 Checkout
               </button>
