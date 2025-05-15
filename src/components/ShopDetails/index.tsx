@@ -7,10 +7,14 @@ import Breadcrumb from "../Common/Breadcrumb";
 import Image from "next/image";
 import Newsletter from "../Common/Newsletter";
 import RecentlyViewdItems from "./RecentlyViewd";
-import { useAppSelector } from "@/redux/store";
+import { useAppSelector, AppDispatch } from "@/redux/store";
+import { useDispatch } from "react-redux";
+import { addItemToCart } from "@/redux/features/cart-slice";
+import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 
 const ShopDetails = () => {
   const [quantity, setQuantity] = useState(1);
+  const dispatch = useDispatch<AppDispatch>();
 
   const alreadyExist = localStorage.getItem("productDetails");
   const productFromStorage = useAppSelector((state) => state.productDetailsReducer.value);
@@ -19,6 +23,28 @@ const ShopDetails = () => {
   useEffect(() => {
     localStorage.setItem("productDetails", JSON.stringify(product));
   }, [product]);
+
+  const handleAddToCart = () => {
+    dispatch(
+      addItemToCart({
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        quantity,
+        imageUrl: product.imageUrl,
+      })
+    );
+  };
+
+  const handleAddToWishlist = () => {
+    dispatch(
+      addItemToWishlist({
+        ...product,
+        status: "available",
+        quantity: 1,
+      })
+    );
+  };
 
   return (
     <>
@@ -43,9 +69,11 @@ const ShopDetails = () => {
                 <h2 className="font-semibold text-2xl text-dark mb-3">{product.name}</h2>
 
                 <div className="flex items-center gap-2 text-[#FFA645] mb-4">
-                  {Array(5).fill(0).map((_, i) => (
-                    <AiFillStar key={i} />
-                  ))}
+                  {Array(5)
+                    .fill(0)
+                    .map((_, i) => (
+                      <AiFillStar key={i} />
+                    ))}
                   <span className="text-sm text-gray-600 ml-2">(5 customer reviews)</span>
                 </div>
 
@@ -88,11 +116,17 @@ const ShopDetails = () => {
                     </button>
                   </div>
 
-                  <button className="bg-blue text-white px-6 py-3 rounded-md hover:bg-blue-dark">
+                  <button
+                    className="bg-blue text-white px-6 py-3 rounded-md hover:bg-blue-dark"
+                    onClick={handleAddToCart}
+                  >
                     Purchase Now
                   </button>
 
-                  <button className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:text-white hover:bg-dark">
+                  <button
+                    className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:text-white hover:bg-dark"
+                    onClick={handleAddToWishlist}
+                  >
                     <FaHeart />
                   </button>
                 </div>
