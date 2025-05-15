@@ -632,7 +632,7 @@ const Checkout = () => {
                 <Button
                   variant="outlined"
                   color="primary"
-                  onClick={() => window.location.href = '/products'}
+                  onClick={() => window.location.href = '/'}
                   sx={{
                     py: 1.5,
                     fontWeight: 600,
