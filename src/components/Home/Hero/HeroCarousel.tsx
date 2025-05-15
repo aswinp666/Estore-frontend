@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; // ✅ Import useRouter
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -17,6 +18,7 @@ type Product = {
 
 const HeroCarousal = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const router = useRouter(); // ✅
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -29,10 +31,14 @@ const HeroCarousal = () => {
         console.error("Failed to fetch products:", error);
       }
     };
-  
+
     fetchProducts();
   }, []);
-  
+
+  const handleShopNow = (product: Product) => {
+    localStorage.setItem("productDetails", JSON.stringify(product)); // ✅ Save product to localStorage
+    router.push("/shop-details"); // ✅ Navigate to ShopDetails
+  };
 
   return (
     <Swiper
@@ -65,17 +71,14 @@ const HeroCarousal = () => {
                 <a href="#">{product.name}</a>
               </h1>
 
-              <p>
-                {product.description}
-                <br />
-              </p>
+              <p>{product.description}</p>
 
-              <a
-                href="#"
+              <button
+                onClick={() => handleShopNow(product)} // ✅ onClick handler
                 className="inline-flex font-medium text-white text-custom-sm rounded-md bg-dark py-3 px-9 ease-out duration-200 hover:bg-blue mt-10"
               >
                 Shop Now
-              </a>
+              </button>
             </div>
 
             <div>
