@@ -197,14 +197,25 @@ const Signin = () => {
                     Forgot password?
                   </button>
                 </div>
-                
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-2 px-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </button>
+               <button
+  type="submit"
+  disabled={isLoading}
+  style={{
+    width: '100%',
+    padding: '0.5rem 1rem',
+    borderRadius: '0.5rem',
+    border: '1px solid gray',
+    backgroundColor: 'white',
+    color: 'black',
+    fontWeight: '500',
+    cursor: isLoading ? 'not-allowed' : 'pointer',
+    opacity: isLoading ? 0.7 : 1,
+    transition: 'opacity 0.3s ease',
+    outline: 'none',
+  }}
+>
+  {isLoading ? 'Signing in...' : 'Sign in'}
+</button>
               </form>
               
               <div className="my-6 relative">
