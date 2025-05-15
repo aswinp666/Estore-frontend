@@ -59,7 +59,7 @@ const SingleItem = ({ item }) => {
             <div className="flex items-center justify-center rounded-[5px] bg-gray-2 max-w-[80px] w-full h-17.5">
          
             {item.imageUrl ? (
-  <Image src={item.imageUr} alt={item.name} width={100} height={100} />
+  <Image src={item.imageUrl} alt={item.name} width={100} height={100} />
 ) : (
   <div className="flex items-center justify-center w-full h-full text-gray-500">
     No Image
