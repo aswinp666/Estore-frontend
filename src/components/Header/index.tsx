@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import CustomSelect from "./CustomSelect";
+// import CustomSelect from "./CustomSelect";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
 import { useAppSelector } from "@/redux/store";
@@ -22,7 +22,7 @@ const Header = () => {
 
 
   const product = useAppSelector((state) => state.cartReducer.items);
-  const totalPrice = useSelector(selectTotalPrice);
+  // const totalPrice = useSelector(selectTotalPrice);
 
   const handleOpenCartModal = () => {
     openCartModal();
@@ -30,9 +30,9 @@ const Header = () => {
 
 
   // Function to open the modal
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
+  // const handleOpenModal = () => {
+  //   setOpenModal(true);
+  // };
 
   // Function to close the modal
   const handleCloseModal = () => {
@@ -53,23 +53,32 @@ const Header = () => {
     window.addEventListener("scroll", handleStickyMenu);
   });
 
-  const options = [
-    { label: "All Categories", value: "0" },
-    { label: "TV", value: "1" },
-    { label: "Mobile", value: "2" },
-    { label: "Consoles", value: "3" },
-    { label: "Earpods", value: "4" },
-    { label: "Tablets", value: "5" },
-    { label: "Camera", value: "6" },
-    { label: "Groceries", value: "7" },
-  ];
+  // const options = [
+  //   { label: "All Categories", value: "0" },
+  //   { label: "TV", value: "1" },
+  //   { label: "Mobile", value: "2" },
+  //   { label: "Consoles", value: "3" },
+  //   { label: "Earpods", value: "4" },
+  //   { label: "Tablets", value: "5" },
+  //   { label: "Camera", value: "6" },
+  //   { label: "Groceries", value: "7" },
+  // ];
 
 
 
-  useEffect(() => {
-  // Example with localStorage:
-  const token = localStorage.getItem("token");
-  setIsLoggedIn(!!token);
+useEffect(() => {
+  const checkToken = () => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  };
+
+  checkToken();
+
+  window.addEventListener("storage", checkToken);
+
+  return () => {
+    window.removeEventListener("storage", checkToken);
+  };
 }, []);
 
   return (
