@@ -32,12 +32,6 @@ export const menuData: Menu[] = [
         path: "/shop-with-sidebar",
       },
       {
-        id: 62,
-        name: "Shop Without Sidebar",
-        newTab: false,
-        path: "/shop-without-sidebar",
-      },
-      {
         id: 64,
         name: "Checkout",
         newTab: false,
@@ -78,50 +72,6 @@ export const menuData: Menu[] = [
         name: "Contact",
         newTab: false,
         path: "/contact",
-      },
-      {
-        id: 62,
-        name: "Error",
-        newTab: false,
-        path: "/error",
-      },
-      {
-        id: 63,
-        name: "Mail Success",
-        newTab: false,
-        path: "/mail-success",
-      },
-    ],
-  },
-  {
-    id: 7,
-    name: "blogs",
-    newTab: false,
-    path: "/",
-    submenu: [
-      {
-        id: 71,
-        name: "Blog Grid with sidebar",
-        newTab: false,
-        path: "/blogs/blog-grid-with-sidebar",
-      },
-      {
-        id: 72,
-        name: "Blog Grid",
-        newTab: false,
-        path: "/blogs/blog-grid",
-      },
-      {
-        id: 73,
-        name: "Blog details with sidebar",
-        newTab: false,
-        path: "/blogs/blog-details-with-sidebar",
-      },
-      {
-        id: 74,
-        name: "Blog details",
-        newTab: false,
-        path: "/blogs/blog-details",
       },
     ],
   },
