@@ -57,6 +57,10 @@ export const cart = createSlice({
     removeAllItemsFromCart: (state) => {
       state.items = [];
     },
+    // NEW: set cart items from backend (e.g. after user login)
+    setCartItems: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+    },
   },
 });
 
@@ -74,5 +78,7 @@ export const {
   removeItemFromCart,
   updateCartItemQuantity,
   removeAllItemsFromCart,
+  setCartItems,  // Export the new action
 } = cart.actions;
+
 export default cart.reducer;
