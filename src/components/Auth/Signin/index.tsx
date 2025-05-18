@@ -7,13 +7,8 @@ import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-import { useDispatch } from "react-redux";
-import { setUser } from "../../../redux/features/auth-slice";
-
 const Signin = () => {
   const router = useRouter();
-  const dispatch = useDispatch();
-
   const [step, setStep] = useState<"signin" | "forgot" | "verify" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,8 +30,6 @@ const Signin = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-
-      dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/");
     } catch {
@@ -58,8 +51,6 @@ const Signin = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-
-      dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/");
     } catch (err) {
@@ -68,7 +59,6 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
-
 
   const handleSendOtp = async () => {
     setError(null);
