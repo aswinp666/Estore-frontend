@@ -18,47 +18,49 @@ const Signin = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSignIn = async (response: any) => {
-    setIsLoading(true);
-    try {
-      const { credential } = response;
-      const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credential }),
-      });
+const handleGoogleSignIn = async (response: any) => {
+  setIsLoading(true);
+  try {
+    const { credential } = response;
+    const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: credential }),
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
-    } catch {
-      setError("Failed to sign in with Google.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    // Reload the page after successful sign-in
+    window.location.href = "/"; // This will do a full page reload
+  } catch {
+    setError("Failed to sign in with Google.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    try {
-      const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
-    } catch (err) {
-      setError("Invalid credentials");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const handleEmailPasswordLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
+  try {
+    const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    // Reload the page after successful sign-in
+    window.location.href = "/"; // This will do a full page reload
+  } catch (err) {
+    setError("Invalid credentials");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSendOtp = async () => {
     setError(null);
