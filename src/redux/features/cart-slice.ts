@@ -1,4 +1,4 @@
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 type CartItem = {
@@ -12,11 +12,37 @@ type CartItem = {
 
 type InitialState = {
   items: CartItem[];
+  status: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
 };
 
 const initialState: InitialState = {
   items: [],
+  status: "idle",
+  error: null,
 };
+
+// Async thunk to fetch persisted cart from the backend using the user's email
+export const fetchPersistedCart = createAsyncThunk<
+  CartItem[], // Returned type
+  string,     // Argument type (user's email)
+  { rejectValue: string }
+>(
+  'cart/fetchPersistedCart',
+  async (userEmail: string, thunkAPI) => {
+    try {
+      const response = await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`);
+      if (!response.ok) {
+        return thunkAPI.rejectWithValue("Failed to fetch cart");
+      }
+      const data = await response.json();
+      // Assumes your backend responds with { cart: [...] }
+      return data.cart as CartItem[];
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 export const cart = createSlice({
   name: "cart",
@@ -58,16 +84,33 @@ export const cart = createSlice({
       state.items = [];
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchPersistedCart.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchPersistedCart.fulfilled, (state, action: PayloadAction<CartItem[]>) => {
+        state.status = "succeeded";
+        state.items = action.payload;
+      })
+      .addCase(fetchPersistedCart.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload || "Failed to fetch cart";
+      });
+  },
 });
 
 export const selectCartItems = (state: RootState) => state.cartReducer.items;
 
-export const selectTotalPrice = createSelector([selectCartItems], (items) => {
-  return items.reduce((total, item) => {
-    const itemPrice = item.discountedPrice ?? item.price;
-    return total + itemPrice * item.quantity;
-  }, 0);
-});
+export const selectTotalPrice = createSelector(
+  [selectCartItems],
+  (items) => {
+    return items.reduce((total, item) => {
+      const itemPrice = item.discountedPrice ?? item.price;
+      return total + itemPrice * item.quantity;
+    }, 0);
+  }
+);
 
 export const {
   addItemToCart,

@@ -6,9 +6,13 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+// Import your typed dispatch hook instead of the vanilla useDispatch
+import { useAppDispatch } from "../../../redux/store"; // Adjust the import path accordingly
+import { fetchPersistedCart } from "../../../redux/features/cart-slice"; // Adjust the path accordingly
 
 const Signin = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch(); // Now using your typed dispatch hook
   const [step, setStep] = useState<"signin" | "forgot" | "verify" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +34,10 @@ const Signin = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      // Save the user details
       localStorage.setItem("user", JSON.stringify(data.user));
+      // Dispatch the thunk to fetch persistent cart with this user's email
+      dispatch(fetchPersistedCart(data.user.email));
       router.push("/");
     } catch {
       setError("Failed to sign in with Google.");
@@ -52,6 +59,8 @@ const Signin = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       localStorage.setItem("user", JSON.stringify(data.user));
+      // Dispatch the thunk to fetch the persisted cart
+      dispatch(fetchPersistedCart(data.user.email));
       router.push("/");
     } catch (err) {
       setError("Invalid credentials");
@@ -59,7 +68,7 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
-
+  
   const handleSendOtp = async () => {
     setError(null);
     setIsLoading(true);
@@ -143,23 +152,25 @@ const Signin = () => {
       <Breadcrumb title="Signin" pages={["Signin"]} />
       <section className="py-12 md:py-20 bg-gray-50 min-h-screen flex items-center">
         <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 w-full">
-          {/* Sign In Step */}
           {step === "signin" && (
             <>
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
                 <p className="text-gray-500">Sign in to your account</p>
               </div>
-              
+
               {error && (
                 <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
                   {error}
                 </div>
               )}
-              
+
               <form onSubmit={handleEmailPasswordLogin} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Email address
                   </label>
                   <input
@@ -172,9 +183,12 @@ const Signin = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Password
                   </label>
                   <input
@@ -187,7 +201,7 @@ const Signin = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -197,6 +211,25 @@ const Signin = () => {
                     Forgot password?
                   </button>
                 </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid gray",
+                    backgroundColor: "white",
+                    color: "black",
+                    fontWeight: "500",
+                    cursor: isLoading ? "not-allowed" : "pointer",
+                    opacity: isLoading ? 0.7 : 1,
+                    transition: "opacity 0.3s ease",
+                    outline: "none",
+                  }}
+                >
+                  {isLoading ? "Signing in..." : "Sign in"}
+                </button>
                <button
   type="submit"
   disabled={isLoading}
