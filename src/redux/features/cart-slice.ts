@@ -1,6 +1,5 @@
 import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 
 type CartItem = {
   _id: number;
@@ -13,47 +12,11 @@ type CartItem = {
 
 type InitialState = {
   items: CartItem[];
-  status: 'idle' | 'loading' | 'succeeded' | 'failed'; // Add loading state
-  error: string | null;
 };
 
 const initialState: InitialState = {
   items: [],
-  status: 'idle',
-  error: null
 };
-
-export const fetchUserCart = createAsyncThunk(
-  'cart/fetchUserCart',
-  async (email: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`https://estore-backend-dyl3.onrender.com/api/auth/cart?email=${email}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      return data.cartItems;
-    } catch (err: any) {
-      return rejectWithValue(err.message);
-    }
-  }
-);
-
-export const saveUserCart = createAsyncThunk(
-  'cart/saveUserCart',
-  async ({ email, cartItems }: { email: string; cartItems: CartItem[] }, { rejectWithValue }) => {
-    try {
-      const response = await fetch('https://estore-backend-dyl3.onrender.com/api/auth/update-cart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, cartItems }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      return data;
-    } catch (err: any) {
-      return rejectWithValue(err.message);
-    }
-  }
-);
 
 export const cart = createSlice({
   name: "cart",
@@ -95,38 +58,9 @@ export const cart = createSlice({
       state.items = [];
     },
   },
-  extraReducers: (builder) => {
-    builder
-      // Handle fetchUserCart
-      .addCase(fetchUserCart.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchUserCart.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.items = action.payload;
-      })
-      .addCase(fetchUserCart.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload as string;
-      })
-      
-      // Handle saveUserCart
-      .addCase(saveUserCart.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(saveUserCart.fulfilled, (state) => {
-        state.status = 'succeeded';
-      })
-      .addCase(saveUserCart.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload as string;
-      });
-  }
 });
 
 export const selectCartItems = (state: RootState) => state.cartReducer.items;
-export const selectCartStatus = (state: RootState) => state.cartReducer.status;
-export const selectCartError = (state: RootState) => state.cartReducer.error;
 
 export const selectTotalPrice = createSelector([selectCartItems], (items) => {
   return items.reduce((total, item) => {
