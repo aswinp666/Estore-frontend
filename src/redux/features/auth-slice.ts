@@ -6,11 +6,14 @@ interface AuthState {
     name: string;
     email: string;
   } | null;
+  cartLoaded: boolean; // Add this flag
 }
 
 const initialState: AuthState = {
   user: null,
+  cartLoaded: false,
 };
+
 
 const authSlice = createSlice({
   name: "auth",

@@ -6,9 +6,16 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchUserCart, saveUserCart } from "@/redux/features/cart-slice";
+import { setUser, clearUser } from "@/redux/features/auth-slice";
 
 const Signin = () => {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const cartItems = useSelector((state: RootState) => state.cartReducer.items);
+  
   const [step, setStep] = useState<"signin" | "forgot" | "verify" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,6 +24,25 @@ const Signin = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignOut = () => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (user) {
+      // Save cart before signing out
+      dispatch(saveUserCart({ 
+        email: user.email, 
+        cartItems 
+      })).then(() => {
+        dispatch(clearUser());
+        localStorage.removeItem('user');
+        router.push('/');
+      });
+    } else {
+      dispatch(clearUser());
+      localStorage.removeItem('user');
+      router.push('/');
+    }
+  };
 
   const handleGoogleSignIn = async (response: any) => {
     setIsLoading(true);
@@ -30,8 +56,19 @@ const Signin = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      
+      // Save user data and fetch cart
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
+      dispatch(setUser(data.user));
+      dispatch(fetchUserCart(data.user.email))
+        .unwrap()
+        .then(() => {
+          router.push("/");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch cart:", error);
+          router.push("/");
+        });
     } catch {
       setError("Failed to sign in with Google.");
     } finally {
@@ -51,8 +88,19 @@ const Signin = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      
+      // Save user data and fetch cart
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
+      dispatch(setUser(data.user));
+      dispatch(fetchUserCart(data.user.email))
+        .unwrap()
+        .then(() => {
+          router.push("/");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch cart:", error);
+          router.push("/");
+        });
     } catch (err) {
       setError("Invalid credentials");
     } finally {
@@ -60,6 +108,7 @@ const Signin = () => {
     }
   };
 
+  // OTP Password Reset Functions - ALL PRESERVED
   const handleSendOtp = async () => {
     setError(null);
     setIsLoading(true);
@@ -85,7 +134,6 @@ const Signin = () => {
     }
   };
   
-  // Similarly update handleVerifyOtp and handleResetPassword:
   const handleVerifyOtp = async () => {
     setError(null);
     setIsLoading(true);
@@ -137,7 +185,7 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       <Breadcrumb title="Signin" pages={["Signin"]} />
