@@ -5,34 +5,33 @@ import CustomSelect from "./CustomSelect";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
 import { useAppSelector } from "@/redux/store";
-import { useSelector, useDispatch } from "react-redux";
-import { selectTotalPrice, resetLocalCartOnly } from "@/redux/features/cart-slice";
+import { useSelector } from "react-redux";
+import { selectTotalPrice } from "@/redux/features/cart-slice";
 import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import Image from "next/image";
-import ProductSearchModal from "./ProductSearchModal";
+import ProductSearchModal from './ProductSearchModal';
 import { useRouter } from "next/navigation";
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [stickyMenu, setStickyMenu] = useState(false);
+  const { openCartModal } = useCartModalContext();
   const [openModal, setOpenModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { openCartModal } = useCartModalContext();
-  const dispatch = useDispatch();
   const router = useRouter();
 
   const product = useAppSelector((state) => state.cartReducer.items);
   const totalPrice = useSelector(selectTotalPrice);
 
   useEffect(() => {
+    // Check if user is logged in when component mounts
     const user = localStorage.getItem("user");
     setIsLoggedIn(!!user);
   }, []);
 
   const handleSignOut = () => {
     localStorage.removeItem("user");
-    dispatch(resetLocalCartOnly()); // ✅ Clear local cart only
     setIsLoggedIn(false);
     router.push("/signin");
   };
@@ -41,14 +40,18 @@ const Header = () => {
     openCartModal();
   };
 
+  // Function to open the modal
   const handleOpenModal = () => {
     setOpenModal(true);
   };
 
+  // Function to close the modal
   const handleCloseModal = () => {
     setOpenModal(false);
   };
 
+
+  // Sticky menu
   const handleStickyMenu = () => {
     if (window.scrollY >= 80) {
       setStickyMenu(true);
@@ -59,8 +62,7 @@ const Header = () => {
 
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
-    return () => window.removeEventListener("scroll", handleStickyMenu);
-  }, []);
+  });
 
   const options = [
     { label: "All Categories", value: "0" },
