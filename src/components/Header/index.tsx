@@ -30,11 +30,20 @@ const Header = () => {
     setIsLoggedIn(!!user);
   }, []);
 
-  const handleSignOut = () => {
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
-    router.push("/signin");
-  };
+ const handleSignOut = () => {
+  // Remove user session
+  localStorage.removeItem("user");
+
+  // ✅ Clear cart from localStorage manually (frontend only)
+  localStorage.removeItem("cartItems");      // or whatever key you're using
+  localStorage.removeItem("cartTotalPrice"); // if you save total
+
+  // Optional: reset Redux state by reloading (only if needed)
+  window.location.reload(); // this ensures cart from localStorage doesn't repopulate redux on re-mount
+
+  router.push("/signin");
+};
+
 
   const handleOpenCartModal = () => {
     openCartModal();
