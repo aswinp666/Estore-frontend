@@ -22,7 +22,6 @@ const Signin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
-
   const handleGoogleSignIn = async (response: any) => {
     setIsLoading(true);
     try {
@@ -37,7 +36,9 @@ const Signin = () => {
       if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
+
+      // 🔁 Force full reload after sign-in
+      window.location.href = "/";
     } catch {
       setError("Failed to sign in with Google.");
     } finally {
@@ -59,7 +60,9 @@ const Signin = () => {
       if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/");
+
+      // 🔁 Force full reload after sign-in
+      window.location.href = "/";
     } catch (err) {
       setError("Invalid credentials");
     } finally {
@@ -91,8 +94,7 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
-  
-  // Similarly update handleVerifyOtp and handleResetPassword:
+
   const handleVerifyOtp = async () => {
     setError(null);
     setIsLoading(true);
@@ -102,13 +104,13 @@ const Signin = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
-        throw new Error(data.message || 'Invalid OTP');
+        throw new Error(data.message || "Invalid OTP");
       }
-      
+
       setStep("reset");
       setSuccessMsg(data.message || "OTP verified successfully");
     } catch (err: any) {
@@ -117,7 +119,7 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleResetPassword = async () => {
     setError(null);
     setIsLoading(true);
@@ -127,13 +129,13 @@ const Signin = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, newPassword }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to reset password');
+        throw new Error(data.message || "Failed to reset password");
       }
-      
+
       setSuccessMsg(data.message || "Password reset successfully");
       setStep("signin");
       setOtp("");
@@ -144,6 +146,7 @@ const Signin = () => {
       setIsLoading(false);
     }
   };
+
   
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
