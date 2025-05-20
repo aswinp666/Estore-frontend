@@ -1,6 +1,7 @@
-import { createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
+// Define cart item type
 type CartItem = {
   _id: number;
   name: string;
@@ -10,13 +11,46 @@ type CartItem = {
   imageUrl?: string;
 };
 
+// Load cart from localStorage
+const loadCartFromLocalStorage = (): CartItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const serializedCart = localStorage.getItem("cart");
+    if (!serializedCart) return [];
+    return JSON.parse(serializedCart);
+  } catch {
+    return [];
+  }
+};
+
+// Define initial state structure
 type InitialState = {
   items: CartItem[];
 };
 
 const initialState: InitialState = {
-  items: [],
+  items: loadCartFromLocalStorage(),
 };
+
+// ✅ Thunk to fetch cart from backend
+export const fetchUserCart = createAsyncThunk(
+  "cart/fetchUserCart",
+  async (_, thunkAPI) => {
+    try {
+      const res = await fetch("/api/cart", {
+        method: "GET",
+        credentials: "include", // makes sure cookies/session are sent
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch");
+
+      const data = await res.json();
+      return data.cartItems; // assume backend sends { cartItems: [...] }
+    } catch (error) {
+      return thunkAPI.rejectWithValue("Failed to fetch cart");
+    }
+  }
+);
 
 export const cart = createSlice({
   name: "cart",
@@ -38,28 +72,51 @@ export const cart = createSlice({
           imageUrl,
         });
       }
+      // Update localStorage
+      localStorage.setItem("cart", JSON.stringify(state.items));
     },
+
     removeItemFromCart: (state, action: PayloadAction<number>) => {
       const itemId = action.payload;
       state.items = state.items.filter((item) => item._id !== itemId);
+      // Update localStorage
+      localStorage.setItem("cart", JSON.stringify(state.items));
     },
+
     updateCartItemQuantity: (
       state,
       action: PayloadAction<{ id: number; quantity: number }>
     ) => {
       const { id, quantity } = action.payload;
       const existingItem = state.items.find((item) => item._id === id);
-    
+
       if (existingItem) {
         existingItem.quantity = quantity;
       }
+      // Update localStorage
+      localStorage.setItem("cart", JSON.stringify(state.items));
     },
+
     removeAllItemsFromCart: (state) => {
       state.items = [];
+      // Update localStorage
+      localStorage.removeItem("cart");
     },
+  },
+
+  extraReducers: (builder) => {
+    builder.addCase(fetchUserCart.fulfilled, (state, action) => {
+      state.items = action.payload;
+      localStorage.setItem("cart", JSON.stringify(state.items));
+    });
+
+    builder.addCase(fetchUserCart.rejected, (state, action) => {
+      console.error("Error loading cart:", action.payload);
+    });
   },
 });
 
+// Selectors
 export const selectCartItems = (state: RootState) => state.cartReducer.items;
 
 export const selectTotalPrice = createSelector([selectCartItems], (items) => {
@@ -69,10 +126,12 @@ export const selectTotalPrice = createSelector([selectCartItems], (items) => {
   }, 0);
 });
 
+// Export actions and reducer
 export const {
   addItemToCart,
   removeItemFromCart,
   updateCartItemQuantity,
   removeAllItemsFromCart,
 } = cart.actions;
+
 export default cart.reducer;

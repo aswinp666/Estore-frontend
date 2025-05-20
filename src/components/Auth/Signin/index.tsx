@@ -6,6 +6,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { useDispatch } from "react-redux";
+import { setUser } from "../../../redux/features/auth-slice"; // adjust path as needed
+import { AppDispatch } from "@/redux/store";
 
 const Signin = () => {
   const router = useRouter();
@@ -17,6 +20,8 @@ const Signin = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+
 
   const handleGoogleSignIn = async (response: any) => {
     setIsLoading(true);
@@ -30,6 +35,7 @@ const Signin = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/");
     } catch {
@@ -51,6 +57,7 @@ const Signin = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/");
     } catch (err) {

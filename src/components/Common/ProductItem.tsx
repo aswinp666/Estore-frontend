@@ -7,31 +7,61 @@ import { updateQuickView } from "@/redux/features/quickView-slice";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { updateproductDetails } from "@/redux/features/product-details";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/redux/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
+  const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
 
   const handleQuickViewUpdate = () => {
     dispatch(updateQuickView({ ...item }));
   };
 
-  const handleAddToCart = (item: Product) => {
+  const handleAddToCart = async (item: Product) => {
     dispatch(
       addItemToCart({
-        _id: item._id,  // ✅ Correct
+        _id: item._id,
         name: item.name,
         price: item.price,
         quantity: 1,
         imageUrl: item.imageUrl,
       })
     );
+
+    if (!userEmail) {
+      console.error("User email not found. User might not be logged in.");
+      return;
+    }
+
+    try {
+      await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userEmail,
+          cartItems: [
+            {
+              productId: item._id,
+              name: item.name,
+              price: item.price,
+              discountedPrice: item.discountedPrice,
+              quantity: 1,
+              imageUrl: item.imageUrl,
+            },
+          ],
+        }),
+      });
+    } catch (error) {
+      console.error("Error saving cart item to backend", error);
+    }
   };
-  
+
   const handleItemToWishList = () => {
     dispatch(
       addItemToWishlist({
@@ -58,24 +88,20 @@ const ProductItem = ({ item }: { item: Product }) => {
         />
 
         <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 ease-linear duration-200 group-hover:translate-y-0">
-          
+          <button
+            onClick={() => handleAddToCart(item)}
+            className="inline-flex font-medium text-custom-sm py-[7px] px-5 rounded-[5px] bg-blue text-white ease-out duration-200 hover:bg-blue-dark"
+          >
+            Add to cart
+          </button>
 
           <button
-  onClick={() => handleAddToCart(item)}
-  className="inline-flex font-medium text-custom-sm py-[7px] px-5 rounded-[5px] bg-blue text-white ease-out duration-200 hover:bg-blue-dark"
->
-  Add to cart
-</button>
-
-
-<button
-  onClick={handleItemToWishList}
-  aria-label="Add to wishlist"
-  className="flex items-center justify-center w-9 h-9 rounded-[5px] shadow-1 ease-out duration-200 text-black bg-white hover:text-blue"
->
-  <Heart className="w-5 h-5" /> {/* Example using lucide-react */}
-</button>
-
+            onClick={handleItemToWishList}
+            aria-label="Add to wishlist"
+            className="flex items-center justify-center w-9 h-9 rounded-[5px] shadow-1 ease-out duration-200 text-black bg-white hover:text-blue"
+          >
+            <Heart className="w-5 h-5" />
+          </button>
         </div>
       </div>
 

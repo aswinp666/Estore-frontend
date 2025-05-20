@@ -15,6 +15,8 @@ import PreviewSliderModal from "@/components/Common/PreviewSlider";
 
 import ScrollToTop from "@/components/Common/ScrollToTop";
 import PreLoader from "@/components/Common/PreLoader";
+import CartLoader from "../../components/CartLoader";
+
 
 export default function RootLayout({
   children,
@@ -48,6 +50,7 @@ export default function RootLayout({
                 </ModalProvider>
               </CartModalProvider>
             </ReduxProvider>
+            <CartLoader />
             <ScrollToTop />
             <Footer />
           </>
