@@ -32,20 +32,26 @@ const initialState: InitialState = {
   items: loadCartFromLocalStorage(),
 };
 
-// ✅ Thunk to fetch cart from backend
+// ✅ Thunk to fetch cart from backend using localStorage user
 export const fetchUserCart = createAsyncThunk(
   "cart/fetchUserCart",
   async (_, thunkAPI) => {
     try {
-      const res = await fetch("`https://estore-backend-dyl3.onrender.com/api/cart?email=${user.email}`", {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      if (!user?.email) {
+        return thunkAPI.rejectWithValue("No user email found");
+      }
+
+      const res = await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${user.email}`, {
         method: "GET",
-        credentials: "include", // makes sure cookies/session are sent
+        credentials: "include",
       });
 
       if (!res.ok) throw new Error("Failed to fetch");
 
       const data = await res.json();
-      return data.cartItems; // assume backend sends { cartItems: [...] }
+      return data.cartItems;
     } catch (error) {
       return thunkAPI.rejectWithValue("Failed to fetch cart");
     }
@@ -72,14 +78,12 @@ export const cart = createSlice({
           imageUrl,
         });
       }
-      // Update localStorage
       localStorage.setItem("cart", JSON.stringify(state.items));
     },
 
     removeItemFromCart: (state, action: PayloadAction<number>) => {
       const itemId = action.payload;
       state.items = state.items.filter((item) => item._id !== itemId);
-      // Update localStorage
       localStorage.setItem("cart", JSON.stringify(state.items));
     },
 
@@ -93,13 +97,11 @@ export const cart = createSlice({
       if (existingItem) {
         existingItem.quantity = quantity;
       }
-      // Update localStorage
       localStorage.setItem("cart", JSON.stringify(state.items));
     },
 
     removeAllItemsFromCart: (state) => {
       state.items = [];
-      // Update localStorage
       localStorage.removeItem("cart");
     },
   },

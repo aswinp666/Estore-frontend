@@ -23,49 +23,48 @@ const ProductItem = ({ item }: { item: Product }) => {
     dispatch(updateQuickView({ ...item }));
   };
 
-  const handleAddToCart = async (item: Product) => {
-    if (!userEmail) {
-      console.error("User not logged in!");
-      alert("Please log in to add items to cart.");
-      return;
-    }
+ const handleAddToCart = async (item: Product) => {
+  if (!userEmail) {
+    console.error("User not logged in!");
+    alert("Please log in to add items to cart.");
+    return;
+  }
 
-    // Update redux state immediately
-    dispatch(
-      addItemToCart({
-        _id: item._id,
-        name: item.name,
-        price: item.price,
-        quantity: 1,
-        imageUrl: item.imageUrl,
-      })
-    );
+  // Update redux state immediately
+  dispatch(
+    addItemToCart({
+      _id: item._id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      imageUrl: item.imageUrl,
+    })
+  );
 
-    try {
-      // Send full cartItems array or just item and quantity + email
-      // Here sending one item, backend logic should handle merging
-      await fetch("`https://estore-backend-dyl3.onrender.com/api/cart?email=${user.email}`", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userEmail,
-          cartItems: [
-            {
-              productId: item._id,
-              name: item.name,
-              price: item.price,
-              quantity: 1,
-              imageUrl: item.imageUrl,
-            },
-          ],
-        }),
-      });
-    } catch (error) {
-      console.error("Error saving cart item to backend", error);
-    }
-  };
+  try {
+    // POST to backend to save item in MongoDB
+    await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail,
+        cartItems: [
+          {
+            productId: item._id,
+            name: item.name,
+            price: item.price,
+            quantity: 1,
+            imageUrl: item.imageUrl,
+          },
+        ],
+      }),
+    });
+  } catch (error) {
+    console.error("Error saving cart item to backend", error);
+  }
+};
 
   const handleItemToWishList = () => {
     dispatch(
