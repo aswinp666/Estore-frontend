@@ -37,7 +37,7 @@ export const fetchUserCart = createAsyncThunk(
   "cart/fetchUserCart",
   async (_, thunkAPI) => {
     try {
-      const res = await fetch("/api/cart", {
+      const res = await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
         method: "GET",
         credentials: "include", // makes sure cookies/session are sent
       });

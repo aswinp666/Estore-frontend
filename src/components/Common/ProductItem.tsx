@@ -44,7 +44,7 @@ const ProductItem = ({ item }: { item: Product }) => {
     try {
       // Send full cartItems array or just item and quantity + email
       // Here sending one item, backend logic should handle merging
-      await fetch("/api/cart", {
+      await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,7 +66,7 @@ const ProductItem = ({ item }: { item: Product }) => {
       console.error("Error saving cart item to backend", error);
     }
   };
-  
+
   const handleItemToWishList = () => {
     dispatch(
       addItemToWishlist({
