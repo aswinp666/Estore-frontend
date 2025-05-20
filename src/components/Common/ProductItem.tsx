@@ -15,6 +15,8 @@ import { Heart } from "lucide-react";
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
+  
+ // Get logged-in user email from Redux auth state
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
 
   const handleQuickViewUpdate = () => {
@@ -22,6 +24,13 @@ const ProductItem = ({ item }: { item: Product }) => {
   };
 
   const handleAddToCart = async (item: Product) => {
+    if (!userEmail) {
+      console.error("User not logged in!");
+      alert("Please log in to add items to cart.");
+      return;
+    }
+
+    // Update redux state immediately
     dispatch(
       addItemToCart({
         _id: item._id,
@@ -32,13 +41,10 @@ const ProductItem = ({ item }: { item: Product }) => {
       })
     );
 
-    if (!userEmail) {
-      console.error("User email not found. User might not be logged in.");
-      return;
-    }
-
     try {
-      await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
+      // Send full cartItems array or just item and quantity + email
+      // Here sending one item, backend logic should handle merging
+      await fetch("/api/cart", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +56,6 @@ const ProductItem = ({ item }: { item: Product }) => {
               productId: item._id,
               name: item.name,
               price: item.price,
-              discountedPrice: item.discountedPrice,
               quantity: 1,
               imageUrl: item.imageUrl,
             },
@@ -61,7 +66,7 @@ const ProductItem = ({ item }: { item: Product }) => {
       console.error("Error saving cart item to backend", error);
     }
   };
-
+  
   const handleItemToWishList = () => {
     dispatch(
       addItemToWishlist({
