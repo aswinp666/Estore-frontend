@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
@@ -15,56 +15,62 @@ import { Heart } from "lucide-react";
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
-  
- // Get logged-in user email from Redux auth state
+
+  // Get logged-in user email from Redux auth state
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
+
+  // Get current cart items from Redux store
+  const cartItems = useSelector((state: RootState) => state.cartReducer.items);
+
+  // Dispatch add item to cart
+  const handleAddToCart = (item: Product) => {
+    if (!userEmail) {
+      alert("Please log in to add items to cart.");
+      return;
+    }
+
+    dispatch(
+      addItemToCart({
+        _id: item._id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        imageUrl: item.imageUrl,
+      })
+    );
+  };
+
+  // Sync whole cart to backend on cart changes
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const saveCart = async () => {
+      try {
+        await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userEmail,
+            cartItems: cartItems.map(ci => ({
+              productId: ci._id,
+              name: ci.name,
+              price: ci.price,
+              quantity: ci.quantity,
+              imageUrl: ci.imageUrl,
+            })),
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving cart to backend", error);
+      }
+    };
+
+    saveCart();
+  }, [cartItems, userEmail]);
 
   const handleQuickViewUpdate = () => {
     dispatch(updateQuickView({ ...item }));
   };
-
- const handleAddToCart = async (item: Product) => {
-  if (!userEmail) {
-    console.error("User not logged in!");
-    alert("Please log in to add items to cart.");
-    return;
-  }
-
-  // Update redux state immediately
-  dispatch(
-    addItemToCart({
-      _id: item._id,
-      name: item.name,
-      price: item.price,
-      quantity: 1,
-      imageUrl: item.imageUrl,
-    })
-  );
-
-  try {
-    // POST to backend to save item in MongoDB
-    await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userEmail,
-        cartItems: [
-          {
-            productId: item._id,
-            name: item.name,
-            price: item.price,
-            quantity: 1,
-            imageUrl: item.imageUrl,
-          },
-        ],
-      }),
-    });
-  } catch (error) {
-    console.error("Error saving cart item to backend", error);
-  }
-};
 
   const handleItemToWishList = () => {
     dispatch(
