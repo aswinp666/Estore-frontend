@@ -5,8 +5,8 @@ import CustomSelect from "./CustomSelect";
 import { menuData } from "./menuData";
 import Dropdown from "./Dropdown";
 import { useAppSelector } from "@/redux/store";
-import { useSelector, useDispatch } from "react-redux";  // <-- added useDispatch
-import { selectTotalPrice, removeAllItemsFromCart } from "@/redux/features/cart-slice";  // <-- added removeAllItemsFromCart
+import { useSelector } from "react-redux";
+import { selectTotalPrice } from "@/redux/features/cart-slice";
 import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import Image from "next/image";
 import ProductSearchModal from './ProductSearchModal';
@@ -21,19 +21,17 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
-  const dispatch = useDispatch();  // <-- added dispatch
-
   const product = useAppSelector((state) => state.cartReducer.items);
   const totalPrice = useSelector(selectTotalPrice);
 
   useEffect(() => {
+    // Check if user is logged in when component mounts
     const user = localStorage.getItem("user");
     setIsLoggedIn(!!user);
   }, []);
 
   const handleSignOut = () => {
     localStorage.removeItem("user");
-    dispatch(removeAllItemsFromCart()); // <-- clear cart on signout
     setIsLoggedIn(false);
     router.push("/signin");
   };
@@ -42,13 +40,16 @@ const Header = () => {
     openCartModal();
   };
 
+  // Function to open the modal
   const handleOpenModal = () => {
     setOpenModal(true);
   };
 
+  // Function to close the modal
   const handleCloseModal = () => {
     setOpenModal(false);
   };
+
 
   // Sticky menu
   const handleStickyMenu = () => {
@@ -73,7 +74,7 @@ const Header = () => {
     { label: "Camera", value: "6" },
     { label: "Groceries", value: "7" },
   ];
-  
+
   return (
     <header
       className={`fixed left-0 top-0 w-full z-9999 bg-white transition-all ease-in-out duration-300 ${
