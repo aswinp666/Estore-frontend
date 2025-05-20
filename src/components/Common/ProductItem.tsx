@@ -44,7 +44,7 @@ const ProductItem = ({ item }: { item: Product }) => {
     try {
       // Send full cartItems array or just item and quantity + email
       // Here sending one item, backend logic should handle merging
-      await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
+      await fetch("`https://estore-backend-dyl3.onrender.com/api/cart?email=${user.email}`", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
