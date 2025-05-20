@@ -20,14 +20,29 @@ import { setUser } from "@/redux/features/auth-slice";
 import { fetchUserCart } from "@/redux/features/cart-slice";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
+  return (
+    <html lang="en" suppressHydrationWarning={true}>
+      <body>
+        <ReduxProvider>
+          <InnerLayout>{children}</InnerLayout>
+        </ReduxProvider>
+      </body>
+    </html>
+  );
+}
+
+function InnerLayout({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => setLoading(false), 1000);
+    // Simulate preloader timeout
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
+    // Load user from localStorage and update Redux store
     const user = localStorage.getItem("user");
     if (user) {
       const parsedUser = JSON.parse(user);
@@ -37,30 +52,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, [dispatch]);
 
   return (
-    <html lang="en" suppressHydrationWarning={true}>
-      <body>
-        <ReduxProvider>
-          <CartModalProvider>
-            <ModalProvider>
-              <PreviewSliderProvider>
-                {loading ? (
-                  <PreLoader />
-                ) : (
-                  <>
-                    <Header />
-                    {children}
-                    <CartSidebarModal />
-                    <PreviewSliderModal />
-                  </>
-                )}
-                <CartLoader />
-                <ScrollToTop />
-                <Footer />
-              </PreviewSliderProvider>
-            </ModalProvider>
-          </CartModalProvider>
-        </ReduxProvider>
-      </body>
-    </html>
+    <CartModalProvider>
+      <ModalProvider>
+        <PreviewSliderProvider>
+          {loading ? (
+            <PreLoader />
+          ) : (
+            <>
+              <Header />
+              {children}
+              <CartSidebarModal />
+              <PreviewSliderModal />
+            </>
+          )}
+          <CartLoader />
+          <ScrollToTop />
+          <Footer />
+        </PreviewSliderProvider>
+      </ModalProvider>
+    </CartModalProvider>
   );
 }
