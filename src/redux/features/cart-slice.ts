@@ -104,6 +104,12 @@ export const cart = createSlice({
       state.items = [];
       localStorage.removeItem("cart");
     },
+
+    resetLocalCartOnly: (state) => {
+    state.items = [];
+    localStorage.setItem("cart", "[]"); // <-- just overwrite without deleting
+  },
+
   },
 
   extraReducers: (builder) => {
@@ -134,6 +140,7 @@ export const {
   removeItemFromCart,
   updateCartItemQuantity,
   removeAllItemsFromCart,
+  resetLocalCartOnly, // <-- add this
 } = cart.actions;
 
 export default cart.reducer;
