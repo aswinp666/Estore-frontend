@@ -27,14 +27,26 @@ const categories = [
   'Groceries'
 ];
 
-const ProductForm = ({ 
-  product, 
-  handleChange, 
-  handleImageChange, 
+// Options per category for rendering inputs and hints
+const categoryOptions = {
+  TV: { Size: ['50 inch', '55 inch'] },
+  Mobile: { Color: ['Red', 'Black', 'Silver', 'White'], RAM: ['8GB', '12GB'] },
+  Consoles: { Edition: ['Digital Edition', 'Standard Edition'] },
+  Earpods: { Color: ['Black', 'Silver', 'White'] },
+  Tablets: { Color: ['Black', 'White'], RAM: ['8GB', '12GB'] }
+};
+
+const ProductForm = ({
+  product,
+  handleChange,
+  handleImageChange,
   handleSubmit,
-  isEditing = false 
+  isEditing = false
 }) => {
   const [imagePreview, setImagePreview] = React.useState(null);
+  
+  // Manage options state (object with keys and arrays of values)
+  const [options, setOptions] = React.useState(product.options || {});
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -48,20 +60,40 @@ const ProductForm = ({
     }
   };
 
+  // Update options state from comma-separated string input
+  const handleOptionChange = (optionKey, value) => {
+    setOptions(prev => ({
+      ...prev,
+      [optionKey]: value
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v.length > 0)
+    }));
+  };
+
+  // Extend the submit handler to add options to the form data
+  const onSubmit = (e) => {
+    e.preventDefault();
+    // Create a synthetic event object merging product + options
+    // or you can pass options separately depending on your handler
+    const extendedProduct = { ...product, options };
+    handleSubmit(e, extendedProduct);
+  };
+
   return (
-    <GlassCard sx={{ 
-      mb: 4, 
+    <GlassCard sx={{
+      mb: 4,
       p: 4,
       backdropFilter: 'blur(16px)',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       border: '1px solid rgba(255, 255, 255, 0.2)',
       boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
     }}>
-      <Typography 
-        variant="h5" 
-        fontWeight={600} 
+      <Typography
+        variant="h5"
+        fontWeight={600}
         gutterBottom
-        sx={{ 
+        sx={{
           mb: 3,
           color: 'text.primary',
           display: 'flex',
@@ -71,8 +103,8 @@ const ProductForm = ({
       >
         {isEditing ? '✏️ Edit Product' : '+ Add New Product'}
       </Typography>
-      
-      <form onSubmit={handleSubmit}>
+
+      <form onSubmit={onSubmit}>
         <Grid container spacing={3}>
           {/* Product Name */}
           <Grid item xs={12} sm={6}>
@@ -85,8 +117,8 @@ const ProductForm = ({
               required
               variant="outlined"
               InputProps={{
-                sx: { 
-                  borderRadius: '12px', 
+                sx: {
+                  borderRadius: '12px',
                   background: 'rgba(255, 255, 255, 0.9)',
                   '&:hover': {
                     background: 'rgba(255, 255, 255, 0.95)'
@@ -95,7 +127,7 @@ const ProductForm = ({
               }}
             />
           </Grid>
-          
+
           {/* Price */}
           <Grid item xs={12} sm={6}>
             <TextField
@@ -109,8 +141,8 @@ const ProductForm = ({
               variant="outlined"
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                sx: { 
-                  borderRadius: '12px', 
+                sx: {
+                  borderRadius: '12px',
                   background: 'rgba(255, 255, 255, 0.9)',
                   '&:hover': {
                     background: 'rgba(255, 255, 255, 0.95)'
@@ -119,7 +151,7 @@ const ProductForm = ({
               }}
             />
           </Grid>
-          
+
           {/* Description */}
           <Grid item xs={12}>
             <TextField
@@ -133,8 +165,8 @@ const ProductForm = ({
               rows={4}
               variant="outlined"
               InputProps={{
-                sx: { 
-                  borderRadius: '12px', 
+                sx: {
+                  borderRadius: '12px',
                   background: 'rgba(255, 255, 255, 0.9)',
                   '&:hover': {
                     background: 'rgba(255, 255, 255, 0.95)'
@@ -143,73 +175,93 @@ const ProductForm = ({
               }}
             />
           </Grid>
-          
 
-             {/* Category */}
-<Grid item xs={12} sm={12}>
-  <FormControl
-    fullWidth
-    required
-    sx={{ minWidth: '220px' }} // Ensures wider layout
-  >
-    <InputLabel
-      id="category-label"
-      sx={{
-        background: 'rgba(255, 255, 255, 0.9)',
-        px: 1,
-        borderRadius: '4px',
-        ml: -0.5
-      }}
-    >
-      Category
-    </InputLabel>
-    <Select
-      labelId="category-label"
-      id="category-select"
-      name="category"
-      value={product.category}
-      label="Category"
-      onChange={handleChange}
-      sx={{
-        width: '100%',
-        minWidth: '300px',
-        borderRadius: '12px',
-        background: 'rgba(255, 255, 255, 0.9)',
-        '&:hover': {
-          background: 'rgba(255, 255, 255, 0.95)'
-        },
-        '& .MuiOutlinedInput-notchedOutline': {
-          border: 'none'
-        }
-      }}
-      MenuProps={{
-        PaperProps: {
-          sx: {
-            borderRadius: '12px',
-            marginTop: '8px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-          }
-        }
-      }}
-    >
-      {categories.map((category) => (
-        <MenuItem
-          key={category}
-          value={category}
-          sx={{
-            '&:hover': {
-              backgroundColor: 'rgba(41, 98, 255, 0.08)'
-            }
-          }}
-        >
-          {category}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Grid>
-         
-          
+          {/* Category */}
+          <Grid item xs={12} sm={12}>
+            <FormControl
+              fullWidth
+              required
+              sx={{ minWidth: '220px' }}
+            >
+              <InputLabel
+                id="category-label"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  px: 1,
+                  borderRadius: '4px',
+                  ml: -0.5
+                }}
+              >
+                Category
+              </InputLabel>
+              <Select
+                labelId="category-label"
+                id="category-select"
+                name="category"
+                value={product.category}
+                label="Category"
+                onChange={handleChange}
+                sx={{
+                  width: '100%',
+                  minWidth: '300px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.95)'
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none'
+                  }
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      borderRadius: '12px',
+                      marginTop: '8px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                    }
+                  }
+                }}
+              >
+                {categories.map((category) => (
+                  <MenuItem
+                    key={category}
+                    value={category}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(41, 98, 255, 0.08)'
+                      }
+                    }}
+                  >
+                    {category}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Dynamic Options Inputs */}
+          {product.category && categoryOptions[product.category] && (
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Options
+              </Typography>
+
+              {Object.entries(categoryOptions[product.category]).map(([optionKey, optionValues]) => (
+                <TextField
+                  key={optionKey}
+                  label={`${optionKey} (comma separated)`}
+                  value={options[optionKey] ? options[optionKey].join(', ') : ''}
+                  onChange={(e) => handleOptionChange(optionKey, e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  variant="outlined"
+                  helperText={`Available: ${optionValues.join(', ')}`}
+                />
+              ))}
+            </Grid>
+          )}
+
           {/* Image Upload */}
           <Grid item xs={12} sm={6}>
             <Button
@@ -232,10 +284,10 @@ const ProductForm = ({
               }}
             >
               {product.image ? 'Change Image' : 'Upload Product Image'}
-              <input 
-                type="file" 
-                hidden 
-                onChange={handleImageUpload} 
+              <input
+                type="file"
+                hidden
+                onChange={handleImageUpload}
                 accept="image/*"
                 required={!isEditing}
               />
@@ -261,37 +313,27 @@ const ProductForm = ({
             )}
           </Grid>
 
-          
-          
-        
-
-          
           {/* Submit Button */}
-          <Grid item xs={12} sx={{ pt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<AddCircleIcon />}
-                size="large"
-                sx={{
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
+          <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              sx={{
+                height: '56px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '1rem',
+                background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                boxShadow: '0 4px 15px rgba(41, 98, 255, 0.4)',
+                '&:hover': {
                   background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
-                  boxShadow: '0 4px 15px rgba(41, 98, 255, 0.2)',
-                  textTransform: 'none',
-                  fontSize: '0.9375rem',
-                  fontWeight: 500,
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
-                    boxShadow: '0 6px 20px rgba(41, 98, 255, 0.3)'
-                  }
-                }}
-              >
-                {isEditing ? 'Update Product' : 'Add Product'}
-              </Button>
-            </Box>
+                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.6)'
+                }
+              }}
+            >
+              {isEditing ? 'Save Changes' : 'Add Product'}
+            </Button>
           </Grid>
         </Grid>
       </form>
