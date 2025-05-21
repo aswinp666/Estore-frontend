@@ -16,8 +16,8 @@ import {
   CardActions,
 } from '@mui/material';
 import { Search as SearchIcon, Close as CloseIcon } from '@mui/icons-material';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
 import { addItemToCart } from '@/redux/features/cart-slice';
 
 const ProductSearchModal = ({ open, onClose }) => {
@@ -26,7 +26,11 @@ const ProductSearchModal = ({ open, onClose }) => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [sortOption, setSortOption] = useState('');
-  const dispatch = useDispatch(); 
+
+  const userEmail = useSelector((state) => state.authReducer.user?.email);
+const cartItems = useSelector((state) => state.cartReducer.items);
+const dispatch = useDispatch();
+
 
   const categories = [
     'All',
@@ -59,24 +63,49 @@ const ProductSearchModal = ({ open, onClose }) => {
     filterProducts();
   }, [searchQuery, selectedCategory, allProducts, sortOption]);
 
+  // 🔄 Sync cart to backend when it changes
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const saveCart = async () => {
+      try {
+        await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userEmail,
+            cartItems: cartItems.map((ci) => ({
+              productId: ci._id,
+              name: ci.name,
+              price: ci.price,
+              quantity: ci.quantity,
+              imageUrl: ci.imageUrl,
+            })),
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving cart to backend', error);
+      }
+    };
+
+    saveCart();
+  }, [cartItems, userEmail]);
+
   const filterProducts = () => {
     let filtered = allProducts;
 
-    // Filter by category
     if (selectedCategory !== 'All') {
       filtered = filtered.filter(
         (product) => product.category === selectedCategory
       );
     }
 
-    // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter((product) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Sort by price
     if (sortOption === 'lowToHigh') {
       filtered = [...filtered].sort((a, b) => a.price - b.price);
     } else if (sortOption === 'highToLow') {
@@ -86,9 +115,14 @@ const ProductSearchModal = ({ open, onClose }) => {
     setFilteredProducts(filtered);
   };
 
-  // Custom Product Card with Fixed Size
+  // 🔧 Custom Product Card with Add to Cart logic
   const ProductCard = ({ product }) => {
     const handleAddToCartClick = () => {
+      if (!userEmail) {
+        alert('Please log in to add items to cart.');
+        return;
+      }
+
       dispatch(
         addItemToCart({
           _id: product._id,
@@ -110,61 +144,57 @@ const ProductSearchModal = ({ open, onClose }) => {
           display: 'flex',
           flexDirection: 'column',
           maxWidth: 240,
-          // margin: 'auto',
         }}
       >
-        <Box sx={{ 
-          height: '140px',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+        <Box
+          sx={{
+            height: '140px',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <CardMedia
             component="img"
             image={product.imageUrl || '/placeholder.png'}
             alt={product.name}
-            sx={{ 
+            sx={{
               width: '100%',
               height: '100%',
               objectFit: 'scale-down',
-              borderRadius: '12px 12px 0 0'
+              borderRadius: '12px 12px 0 0',
             }}
           />
         </Box>
-        <CardContent sx={{ 
-          padding: 2,
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
+        <CardContent
+          sx={{
+            padding: 2,
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{
               fontSize: '1rem',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
+              WebkitBoxOrient: 'vertical',
             }}
           >
             {product.name}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem', mt: 'auto' }}>
-            <span style={{marginLeft: 8 }}>
-              ₹{product.price}
-            </span>
+            <span style={{ marginLeft: 8 }}>₹{product.price}</span>
           </Typography>
         </CardContent>
         <CardActions sx={{ padding: 2 }}>
-          <Button 
-            size="small" 
-            variant="contained" 
-            fullWidth
-            onClick={handleAddToCartClick}
-          >
+          <Button size="small" variant="contained" fullWidth onClick={handleAddToCartClick}>
             Add to Cart
           </Button>
         </CardActions>
