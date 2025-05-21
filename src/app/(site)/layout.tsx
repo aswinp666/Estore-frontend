@@ -17,7 +17,7 @@ import CartLoader from "../../components/CartLoader";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import { setUser } from "@/redux/features/auth-slice";
-import { fetchUserCart } from "@/redux/features/cart-slice";
+import { clearCart,fetchUserCart } from "@/redux/features/cart-slice";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -41,15 +41,17 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    // Load user from localStorage and update Redux store
-    const user = localStorage.getItem("user");
-    if (user) {
-      const parsedUser = JSON.parse(user);
-      dispatch(setUser(parsedUser));
-      dispatch(fetchUserCart());
-    }
-  }, [dispatch]);
+ useEffect(() => {
+  const user = localStorage.getItem("user");
+
+  if (user) {
+    const parsedUser = JSON.parse(user);
+    dispatch(setUser(parsedUser));
+    dispatch(fetchUserCart());
+  } else {
+    dispatch(clearCart()); // ✅ clear Redux cart if user not found
+  }
+}, [dispatch]);
 
   return (
     <CartModalProvider>
