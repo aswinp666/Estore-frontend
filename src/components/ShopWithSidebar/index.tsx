@@ -13,6 +13,8 @@ import {
   FiList,
   FiArrowRight 
 } from "react-icons/fi";
+import { useSearchParams } from "next/navigation";
+
 
 const ShopWithSidebar = () => {
   const [productStyle, setProductStyle] = useState("grid");
@@ -25,6 +27,15 @@ const ShopWithSidebar = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 9;
+
+  const searchParams = useSearchParams();
+
+useEffect(() => {
+  const categoryFromUrl = searchParams.get("category");
+  if (categoryFromUrl) {
+    setSelectedCategory(categoryFromUrl);
+  }
+}, [searchParams]);
 
   // Fetch products from backend
   useEffect(() => {
