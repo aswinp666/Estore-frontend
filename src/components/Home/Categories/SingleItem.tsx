@@ -8,9 +8,9 @@ const SingleItem = ({ item }: { item: Category }) => {
   const router = useRouter();
 
   const handleClick = () => {
-    router.push("/shop-with-sidebar");
-    // Or, to pass category name: 
-    // router.push(`/shop-with-sidebar?category=${encodeURIComponent(item.name)}`);
+    
+    
+    router.push(`/shop-with-sidebar?category=${encodeURIComponent(item.name)}`);
   };
 
   return (

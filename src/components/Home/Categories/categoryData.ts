@@ -5,32 +5,32 @@ const data = [
     img: "/images/categories/categories-01.png",
   },
   {
-    name: "Laptop & PC",
+    name: "Mobile",
     id: 2,
     img: "/images/categories/categories-02.png",
   },
   {
-    name: "Mobile & Tablets",
+    name: "Console",
     id: 3,
     img: "/images/categories/categories-03.png",
   },
   {
-    name: "Games & Videos",
+    name: "Earpods",
     id: 4,
     img: "/images/categories/categories-04.png",
   },
   {
-    name: "Home Appliances",
+    name: "Tablets",
     id: 5,
     img: "/images/categories/categories-05.png",
   },
   {
-    name: "Health & Sports",
+    name: "Offer Products",
     id: 6,
     img: "/images/categories/categories-06.png",
   },
   {
-    name: "Watches",
+    name: "Camera Groceries",
     id: 7,
     img: "/images/categories/categories-07.png",
   },
