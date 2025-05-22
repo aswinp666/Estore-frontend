@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
@@ -16,14 +16,13 @@ const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Get logged-in user email from Redux auth state
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
-
-  // Get current cart items from Redux store
   const cartItems = useSelector((state: RootState) => state.cartReducer.items);
 
-  // Dispatch add item to cart
-  const handleAddToCart = (item: Product) => {
+  const [selectedColor, setSelectedColor] = useState(item.options?.Color?.[0] || "");
+  const [selectedRAM, setSelectedRAM] = useState(item.options?.RAM?.[0] || "");
+
+  const handleAddToCart = () => {
     if (!userEmail) {
       alert("Please log in to add items to cart.");
       return;
@@ -32,7 +31,7 @@ const ProductItem = ({ item }: { item: Product }) => {
     dispatch(
       addItemToCart({
         _id: item._id,
-        name: item.name,
+        name: `${item.name} - ${selectedRAM} - ${selectedColor}`,
         price: item.price,
         quantity: 1,
         imageUrl: item.imageUrl,
@@ -40,7 +39,6 @@ const ProductItem = ({ item }: { item: Product }) => {
     );
   };
 
-  // Sync whole cart to backend on cart changes
   useEffect(() => {
     if (!userEmail) return;
 
@@ -51,7 +49,7 @@ const ProductItem = ({ item }: { item: Product }) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userEmail,
-            cartItems: cartItems.map(ci => ({
+            cartItems: cartItems.map((ci) => ({
               productId: ci._id,
               name: ci.name,
               price: ci.price,
@@ -68,10 +66,6 @@ const ProductItem = ({ item }: { item: Product }) => {
     saveCart();
   }, [cartItems, userEmail]);
 
-  const handleQuickViewUpdate = () => {
-    dispatch(updateQuickView({ ...item }));
-  };
-
   const handleItemToWishList = () => {
     dispatch(
       addItemToWishlist({
@@ -87,7 +81,7 @@ const ProductItem = ({ item }: { item: Product }) => {
   };
 
   return (
-    <div className="group">
+    <div className="group border rounded-xl p-4 shadow-sm">
       <div className="relative overflow-hidden flex items-center justify-center rounded-lg bg-[#F6F7FB] min-h-[270px] mb-4">
         <Image
           src={item?.imageUrl || "/images/placeholder.png"}
@@ -96,10 +90,9 @@ const ProductItem = ({ item }: { item: Product }) => {
           height={250}
           className="object-contain"
         />
-
         <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 ease-linear duration-200 group-hover:translate-y-0">
           <button
-            onClick={() => handleAddToCart(item)}
+            onClick={handleAddToCart}
             className="inline-flex font-medium text-custom-sm py-[7px] px-5 rounded-[5px] bg-blue text-white ease-out duration-200 hover:bg-blue-dark"
           >
             Add to cart
@@ -136,12 +129,47 @@ const ProductItem = ({ item }: { item: Product }) => {
         </Link>
       </h3>
 
-      <div className="flex items-center gap-2 font-medium text-lg">
+      <div className="flex items-center gap-2 font-medium text-lg mb-2">
         <span className="text-dark">₹{item.discountedPrice || item.price}</span>
         {item.discountedPrice && item.discountedPrice !== item.price && (
           <span className="text-dark-4 line-through">₹{item.price}</span>
         )}
       </div>
+
+      {/* Color Options */}
+      {item.options?.Color && (
+        <div className="flex gap-2 mb-2">
+          {item.options.Color.map((color) => (
+            <button
+              key={color}
+              className={`w-6 h-6 rounded-full border-2 ${
+                selectedColor === color ? "border-black" : "border-gray-300"
+              }`}
+              style={{ backgroundColor: color.toLowerCase() }}
+              onClick={() => setSelectedColor(color)}
+              aria-label={`Color ${color}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* RAM Options */}
+      {item.options?.RAM && (
+        <div className="flex gap-2 mb-3">
+          {item.options.RAM.map((ram) => (
+            <label key={ram} className="flex items-center gap-1 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name={`ram-${item._id}`}
+                value={ram}
+                checked={selectedRAM === ram}
+                onChange={() => setSelectedRAM(ram)}
+              />
+              {ram}
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
