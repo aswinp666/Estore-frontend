@@ -12,13 +12,18 @@ import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-// Map categories to the options they should show
-const categoryOptionsMap: Record<string, string[]> = {
-  Mobile: ["Color", "RAM"],
-  Console: ["Color"],
-  TV: [],
-  Laptop: ["Color", "RAM"],
-  // Add more categories as needed
+// Define options per category with option names and their values
+const categoryOptionsMap: Record<
+  string,
+  Record<string, string[]>
+> = {
+  TV: { Size: ["50 inch", "55 inch"] },
+  Mobile: { Color: ["Red", "Black", "Silver", "White"], RAM: ["8GB", "12GB"] },
+  Consoles: { Edition: ["Digital Edition", "Standard Edition"] },
+  Earpods: { Color: ["Black", "Silver", "White"] },
+  Tablets: { Color: ["Black", "White"], RAM: ["8GB", "12GB"] },
+  Laptop: { Color: ["Black", "Silver"], RAM: ["8GB", "16GB"] },
+  // Add more categories & options as needed
 };
 
 const ProductItem = ({ item }: { item: Product }) => {
@@ -28,18 +33,31 @@ const ProductItem = ({ item }: { item: Product }) => {
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
   const cartItems = useSelector((state: RootState) => state.cartReducer.items);
 
-  // Get the options to display based on product category
-  const optionsToShow = categoryOptionsMap[item.category] || [];
+  // Get the options object for this product category
+  const optionsForCategory = categoryOptionsMap[item.category] || {};
 
-  // Initialize selected options (default to first available or empty string)
-  const [selectedColor, setSelectedColor] = useState(
-    optionsToShow.includes("Color") && item.options?.Color?.length
-      ? item.options.Color[0]
-      : ""
-  );
-  const [selectedRAM, setSelectedRAM] = useState(
-    optionsToShow.includes("RAM") && item.options?.RAM?.length ? item.options.RAM[0] : ""
-  );
+  // State: keep selected value for each option name dynamically
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  // Initialize selected options on mount or when item/category changes
+  useEffect(() => {
+    const initialSelected: Record<string, string> = {};
+    for (const optionName in optionsForCategory) {
+      // If product also provides option values (in item.options), use that, else from categoryOptionsMap
+      const values =
+        item.options?.[optionName] && item.options[optionName].length
+          ? item.options[optionName]
+          : optionsForCategory[optionName];
+
+      initialSelected[optionName] = values[0] || "";
+    }
+    setSelectedOptions(initialSelected);
+  }, [item, optionsForCategory]);
+
+  // Handle option change dynamically
+  const handleOptionChange = (optionName: string, value: string) => {
+    setSelectedOptions((prev) => ({ ...prev, [optionName]: value }));
+  };
 
   const handleAddToCart = () => {
     if (!userEmail) {
@@ -47,12 +65,15 @@ const ProductItem = ({ item }: { item: Product }) => {
       return;
     }
 
+    // Build product name with selected options appended
+    const optionStrings = Object.entries(selectedOptions).map(
+      ([key, val]) => ` - ${val}`
+    );
+
     dispatch(
       addItemToCart({
         _id: item._id,
-        name: `${item.name}${selectedRAM ? " - " + selectedRAM : ""}${
-          selectedColor ? " - " + selectedColor : ""
-        }`,
+        name: `${item.name}${optionStrings.join("")}`,
         price: item.price,
         quantity: 1,
         imageUrl: item.imageUrl,
@@ -157,40 +178,49 @@ const ProductItem = ({ item }: { item: Product }) => {
         )}
       </div>
 
-      {/* Conditionally render Color options */}
-      {optionsToShow.includes("Color") && item.options?.Color && (
-        <div className="flex gap-2 mb-2">
-          {item.options.Color.map((color) => (
-            <button
-              key={color}
-              className={`w-6 h-6 rounded-full border-2 ${
-                selectedColor === color ? "border-black" : "border-gray-300"
-              }`}
-              style={{ backgroundColor: color.toLowerCase() }}
-              onClick={() => setSelectedColor(color)}
-              aria-label={`Color ${color}`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Conditionally render RAM options */}
-      {optionsToShow.includes("RAM") && item.options?.RAM && (
-        <div className="flex gap-2 mb-3">
-          {item.options.RAM.map((ram) => (
-            <label key={ram} className="flex items-center gap-1 text-sm cursor-pointer">
-              <input
-                type="radio"
-                name={`ram-${item._id}`}
-                value={ram}
-                checked={selectedRAM === ram}
-                onChange={() => setSelectedRAM(ram)}
-              />
-              {ram}
-            </label>
-          ))}
-        </div>
-      )}
+      {/* Render option groups dynamically */}
+      {Object.entries(optionsForCategory).map(([optionName, values]) => {
+        // Handle rendering for Color differently (colored circles), else radios for others
+        if (optionName.toLowerCase() === "color") {
+          return (
+            <div key={optionName} className="flex gap-2 mb-2">
+              {values.map((color) => (
+                <button
+                  key={color}
+                  className={`w-6 h-6 rounded-full border-2 ${
+                    selectedOptions[optionName] === color ? "border-black" : "border-gray-300"
+                  }`}
+                  style={{ backgroundColor: color.toLowerCase() }}
+                  onClick={() => handleOptionChange(optionName, color)}
+                  aria-label={`${optionName} ${color}`}
+                  type="button"
+                />
+              ))}
+            </div>
+          );
+        } else {
+          return (
+            <div key={optionName} className="flex gap-4 mb-3 items-center">
+              <span className="font-medium">{optionName}:</span>
+              {values.map((value) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-1 text-sm cursor-pointer select-none"
+                >
+                  <input
+                    type="radio"
+                    name={`${optionName}-${item._id}`}
+                    value={value}
+                    checked={selectedOptions[optionName] === value}
+                    onChange={() => handleOptionChange(optionName, value)}
+                  />
+                  {value}
+                </label>
+              ))}
+            </div>
+          );
+        }
+      })}
     </div>
   );
 };
