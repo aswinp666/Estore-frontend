@@ -12,6 +12,15 @@ import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
+// Map categories to the options they should show
+const categoryOptionsMap: Record<string, string[]> = {
+  Mobile: ["Color", "RAM"],
+  Console: ["Color"],
+  TV: [],
+  Laptop: ["Color", "RAM"],
+  // Add more categories as needed
+};
+
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
@@ -19,8 +28,18 @@ const ProductItem = ({ item }: { item: Product }) => {
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
   const cartItems = useSelector((state: RootState) => state.cartReducer.items);
 
-  const [selectedColor, setSelectedColor] = useState(item.options?.Color?.[0] || "");
-  const [selectedRAM, setSelectedRAM] = useState(item.options?.RAM?.[0] || "");
+  // Get the options to display based on product category
+  const optionsToShow = categoryOptionsMap[item.category] || [];
+
+  // Initialize selected options (default to first available or empty string)
+  const [selectedColor, setSelectedColor] = useState(
+    optionsToShow.includes("Color") && item.options?.Color?.length
+      ? item.options.Color[0]
+      : ""
+  );
+  const [selectedRAM, setSelectedRAM] = useState(
+    optionsToShow.includes("RAM") && item.options?.RAM?.length ? item.options.RAM[0] : ""
+  );
 
   const handleAddToCart = () => {
     if (!userEmail) {
@@ -31,7 +50,9 @@ const ProductItem = ({ item }: { item: Product }) => {
     dispatch(
       addItemToCart({
         _id: item._id,
-        name: `${item.name} - ${selectedRAM} - ${selectedColor}`,
+        name: `${item.name}${selectedRAM ? " - " + selectedRAM : ""}${
+          selectedColor ? " - " + selectedColor : ""
+        }`,
         price: item.price,
         quantity: 1,
         imageUrl: item.imageUrl,
@@ -136,8 +157,8 @@ const ProductItem = ({ item }: { item: Product }) => {
         )}
       </div>
 
-      {/* Color Options */}
-      {item.options?.Color && (
+      {/* Conditionally render Color options */}
+      {optionsToShow.includes("Color") && item.options?.Color && (
         <div className="flex gap-2 mb-2">
           {item.options.Color.map((color) => (
             <button
@@ -153,8 +174,8 @@ const ProductItem = ({ item }: { item: Product }) => {
         </div>
       )}
 
-      {/* RAM Options */}
-      {item.options?.RAM && (
+      {/* Conditionally render RAM options */}
+      {optionsToShow.includes("RAM") && item.options?.RAM && (
         <div className="flex gap-2 mb-3">
           {item.options.RAM.map((ram) => (
             <label key={ram} className="flex items-center gap-1 text-sm cursor-pointer">
