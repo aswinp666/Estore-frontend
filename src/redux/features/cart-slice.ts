@@ -3,7 +3,7 @@ import { RootState } from "../store";
 
 // Define cart item type
 type CartItem = {
-  _id: number;
+  productId: string;       // changed from _id: number to productId: string
   name: string;
   price: number;
   discountedPrice?: number;
@@ -63,14 +63,14 @@ export const cart = createSlice({
   initialState,
   reducers: {
     addItemToCart: (state, action: PayloadAction<CartItem>) => {
-      const { _id, name, price, quantity, discountedPrice, imageUrl } = action.payload;
-      const existingItem = state.items.find((item) => item._id === _id);
+      const { productId, name, price, quantity, discountedPrice, imageUrl } = action.payload;
+      const existingItem = state.items.find((item) => item.productId === productId);
 
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
         state.items.push({
-          _id,
+          productId,
           name,
           price,
           quantity,
@@ -81,18 +81,18 @@ export const cart = createSlice({
       localStorage.setItem("cart", JSON.stringify(state.items));
     },
 
-    removeItemFromCart: (state, action: PayloadAction<number>) => {
-      const itemId = action.payload;
-      state.items = state.items.filter((item) => item._id !== itemId);
+    removeItemFromCart: (state, action: PayloadAction<string>) => {
+      const productId = action.payload;
+      state.items = state.items.filter((item) => item.productId !== productId);
       localStorage.setItem("cart", JSON.stringify(state.items));
     },
 
     updateCartItemQuantity: (
       state,
-      action: PayloadAction<{ id: number; quantity: number }>
+      action: PayloadAction<{ productId: string; quantity: number }>
     ) => {
-      const { id, quantity } = action.payload;
-      const existingItem = state.items.find((item) => item._id === id);
+      const { productId, quantity } = action.payload;
+      const existingItem = state.items.find((item) => item.productId === productId);
 
       if (existingItem) {
         existingItem.quantity = quantity;
@@ -104,10 +104,10 @@ export const cart = createSlice({
       state.items = [];
       localStorage.removeItem("cart");
     },
+
     clearCart: (state) => {
-  state.items = [];
-  
-},
+      state.items = [];
+    },
   },
 
   extraReducers: (builder) => {

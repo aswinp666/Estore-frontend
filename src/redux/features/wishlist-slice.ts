@@ -1,11 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type InitialState = {
-  items: WishListItem[];
-};
-
 type WishListItem = {
-  _id: number;
+  _id: string;              // changed from number to string
   name: string;
   price: number;
   discountedPrice: number;
@@ -15,6 +11,10 @@ type WishListItem = {
     thumbnails: string[];
     previews: string[];
   };
+};
+
+type InitialState = {
+  items: WishListItem[];
 };
 
 const initialState: InitialState = {
@@ -44,7 +44,7 @@ export const wishlist = createSlice({
         });
       }
     },
-    removeItemFromWishlist: (state, action: PayloadAction<number>) => {
+    removeItemFromWishlist: (state, action: PayloadAction<string>) => {
       const itemId = action.payload;
       state.items = state.items.filter((item) => item._id !== itemId);
     },
@@ -60,4 +60,5 @@ export const {
   removeItemFromWishlist,
   removeAllItemsFromWishlist,
 } = wishlist.actions;
+
 export default wishlist.reducer;

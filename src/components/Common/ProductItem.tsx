@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
-import { updateQuickView } from "@/redux/features/quickView-slice";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { updateproductDetails } from "@/redux/features/product-details";
@@ -19,10 +18,8 @@ const ProductItem = ({ item }: { item: Product }) => {
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
   const cartItems = useSelector((state: RootState) => state.cartReducer.items);
 
-  // State to keep selected value for each available option
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
-  // Initialize selected options from item.options only
   useEffect(() => {
     const initialSelected: Record<string, string> = {};
     for (const optionName in item.options || {}) {
@@ -49,35 +46,48 @@ const ProductItem = ({ item }: { item: Product }) => {
     );
 
     dispatch(
-      addItemToCart({
-        _id: item._id,
-        name: `${item.name}${optionStrings.join("")}`,
-        price: item.price,
-        quantity: 1,
-        imageUrl: item.imageUrl,
-      })
-    );
-  };
+  addItemToCart({
+    productId: item._id,  // <-- Use productId key here!
+    name: `${item.name}${optionStrings.join("")}`,
+    price: item.price,
+    discountedPrice: item.discountedPrice || item.price,
+    quantity: 1,
+    imageUrl: item.imageUrl,
+  })
+);
+};
 
+  // Save cart to backend on cartItems or userEmail change
   useEffect(() => {
     if (!userEmail) return;
 
     const saveCart = async () => {
+      const payload = {
+        userEmail,
+        cartItems: cartItems.map((ci) => ({
+          _id: ci.productId,
+          name: ci.name,
+          price: ci.price,
+          discountedPrice: ci.discountedPrice || ci.price,
+          quantity: ci.quantity,
+          imageUrl: ci.imageUrl,
+        })),
+      };
+
+      console.log("Sending cart to backend:", payload); // DEBUG LOG
+
       try {
-        await fetch(`https://estore-backend-dyl3.onrender.com/api/cart?email=${userEmail}`, {
+        const res = await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userEmail,
-            cartItems: cartItems.map((ci) => ({
-              productId: ci._id,
-              name: ci.name,
-              price: ci.price,
-              quantity: ci.quantity,
-              imageUrl: ci.imageUrl,
-            })),
-          }),
+          body: JSON.stringify(payload),
         });
+
+        if (!res.ok) {
+          console.error("Failed to save cart, status:", res.status);
+        } else {
+          console.log("Cart saved successfully");
+        }
       } catch (error) {
         console.error("Error saving cart to backend", error);
       }
@@ -156,7 +166,6 @@ const ProductItem = ({ item }: { item: Product }) => {
         )}
       </div>
 
-      {/* Render only available product options from item.options */}
       {Object.entries(item.options || {}).map(([optionName, values]) => {
         if (optionName.toLowerCase() === "color") {
           return (
