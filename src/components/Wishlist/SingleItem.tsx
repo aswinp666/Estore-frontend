@@ -14,14 +14,15 @@ const SingleItem = ({ item }) => {
     dispatch(removeItemFromWishlist(item.id));
   };
 
-  const handleAddToCart = () => {
-    dispatch(
-      addItemToCart({
-        ...item,
-        quantity: 1,
-      })
-    );
-  };
+const handleAddToCart = () => {
+  dispatch(
+    addItemToCart({
+      ...item,
+      productId: item._id, // add this line to map _id to productId
+      quantity: 1,
+    })
+  );
+};
 
   return (
     <div className="flex items-center border-t border-gray-3 py-5 px-10">

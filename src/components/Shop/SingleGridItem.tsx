@@ -22,13 +22,15 @@ const SingleGridItem = ({ item }: { item: Product }) => {
 
   // add to cart
   const handleAddToCart = () => {
-    dispatch(
-      addItemToCart({
-        ...item,
-        quantity: 1,
-      })
-    );
-  };
+  dispatch(
+    addItemToCart({
+      ...item,
+      productId: item._id, // add this line to map _id to productId
+      quantity: 1,
+    })
+  );
+};
+
 
   const handleItemToWishList = () => {
     dispatch(
