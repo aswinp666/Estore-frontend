@@ -8,8 +8,9 @@ const SingleItem = ({ item, removeItemFromCart }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const handleRemoveFromCart = () => {
-    dispatch(removeItemFromCart(item._id));
-  };
+  dispatch(removeItemFromCart(item.productId));
+};
+
 
   return (
     <div className="flex items-center justify-between gap-5">
