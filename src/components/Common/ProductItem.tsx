@@ -186,44 +186,24 @@ const ProductItem = ({ item }: { item: Product }) => {
           );
         } else {
           return (
-<div key={optionName} style={{ display: 'flex', gap: '16px', marginBottom: '12px', alignItems: 'center' }}>
-  <span style={{ fontWeight: '500' }}>{optionName}:</span>
-  {values.map((value) => {
-    const isSelected = selectedOptions[optionName] === value;
-    return (
-      <label
-        key={value}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        <input
-          type="radio"
-          name={`${optionName}-${item._id}`}
-          value={value}
-          checked={isSelected}
-          onChange={() => handleOptionChange(optionName, value)}
-          style={{ display: 'none' }} // hide native radio
-        />
-        <div
-          style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            backgroundColor: value,
-            border: isSelected ? '3px solid #1e90ff' : '2px solid #ccc',
-            boxShadow: isSelected ? '0 0 0 3px rgba(30, 144, 255, 0.4)' : 'none',
-            transition: 'all 0.2s',
-          }}
-        ></div>
-      </label>
-    );
-  })}
-</div>
-
+            <div key={optionName} className="flex gap-4 mb-3 items-center">
+              <span className="font-medium">{optionName}:</span>
+              {values.map((value) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-1 text-sm cursor-pointer select-none"
+                >
+                  <input
+                    type="radio"
+                    name={`${optionName}-${item._id}`}
+                    value={value}
+                    checked={selectedOptions[optionName] === value}
+                    onChange={() => handleOptionChange(optionName, value)}
+                  />
+                  {value}
+                </label>
+              ))}
+            </div>
           );
         }
       })}
