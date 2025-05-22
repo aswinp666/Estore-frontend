@@ -59,34 +59,27 @@ const AdminDashboard = () => {
     setProduct(prev => ({ ...prev, image: e.target.files[0] }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('name', product.name);
-    formData.append('description', product.description);
-    formData.append('price', product.price);
-    formData.append('category', product.category);
-    if (product.image) formData.append('image', product.image);
-
-    try {
-      if (isEditing) {
-        await axios.put(`https://estore-backend-dyl3.onrender.com/api/products/${currentProductId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      } else {
-        await axios.post('https://estore-backend-dyl3.onrender.com/api/products', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-      
-      await fetchProducts();
-      resetForm();
-      alert(`Product ${isEditing ? 'updated' : 'added'} successfully!`);
-    } catch (err) {
-      console.error('Error:', err);
-      alert(`Failed to ${isEditing ? 'update' : 'add'} product`);
+ const handleSubmit = async (formData) => {
+  try {
+    if (isEditing) {
+      await axios.put(`https://estore-backend-dyl3.onrender.com/api/products/${currentProductId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    } else {
+      await axios.post('https://estore-backend-dyl3.onrender.com/api/products', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     }
-  };
+
+    await fetchProducts();
+    resetForm();
+    alert(`Product ${isEditing ? 'updated' : 'added'} successfully!`);
+  } catch (err) {
+    console.error('Error:', err);
+    alert(`Failed to ${isEditing ? 'update' : 'add'} product`);
+  }
+};
+
 
   const handleDelete = async (id) => {
     try {

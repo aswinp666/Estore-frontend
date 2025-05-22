@@ -72,24 +72,24 @@ const ProductForm = ({
     }));
   };
 
-  const onSubmit = (e) => {
+ const onSubmit = (e) => {
   e.preventDefault();
-  const extendedProduct = { ...product, options };
 
+  const extendedProduct = { ...product, options };
   const formData = new FormData();
+
   formData.append('name', extendedProduct.name);
   formData.append('price', extendedProduct.price);
   formData.append('description', extendedProduct.description);
   formData.append('category', extendedProduct.category);
-
   if (extendedProduct.image instanceof File) {
     formData.append('image', extendedProduct.image);
   }
-
   formData.append('options', JSON.stringify(extendedProduct.options));
 
-  handleSubmit(formData);
+  handleSubmit(formData); // ✅ no event passed here
 };
+
 
   return (
     <GlassCard sx={{
