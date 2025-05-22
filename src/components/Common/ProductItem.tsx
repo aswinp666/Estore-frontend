@@ -12,20 +12,6 @@ import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-// Define options per category with option names and their values
-const categoryOptionsMap: Record<
-  string,
-  Record<string, string[]>
-> = {
-  TV: { Size: ["50 inch", "55 inch"] },
-  Mobile: { Color: ["Red", "Black", "Silver", "White"], RAM: ["8GB", "12GB"] },
-  Consoles: { Edition: ["Digital Edition", "Standard Edition"] },
-  Earpods: { Color: ["Black", "Silver", "White"] },
-  Tablets: { Color: ["Black", "White"], RAM: ["8GB", "12GB"] },
-  Laptop: { Color: ["Black", "Silver"], RAM: ["8GB", "16GB"] },
-  // Add more categories & options as needed
-};
-
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
   const dispatch = useDispatch<AppDispatch>();
@@ -33,28 +19,21 @@ const ProductItem = ({ item }: { item: Product }) => {
   const userEmail = useSelector((state: RootState) => state.authReducer.user?.email);
   const cartItems = useSelector((state: RootState) => state.cartReducer.items);
 
-  // Get the options object for this product category
-  const optionsForCategory = categoryOptionsMap[item.category] || {};
-
-  // State: keep selected value for each option name dynamically
+  // State to keep selected value for each available option
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
-  // Initialize selected options on mount or when item/category changes
+  // Initialize selected options from item.options only
   useEffect(() => {
     const initialSelected: Record<string, string> = {};
-    for (const optionName in optionsForCategory) {
-      // If product also provides option values (in item.options), use that, else from categoryOptionsMap
-      const values =
-        item.options?.[optionName] && item.options[optionName].length
-          ? item.options[optionName]
-          : optionsForCategory[optionName];
-
-      initialSelected[optionName] = values[0] || "";
+    for (const optionName in item.options || {}) {
+      const values = item.options?.[optionName];
+      if (values && values.length) {
+        initialSelected[optionName] = values[0];
+      }
     }
     setSelectedOptions(initialSelected);
-  }, [item, optionsForCategory]);
+  }, [item]);
 
-  // Handle option change dynamically
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({ ...prev, [optionName]: value }));
   };
@@ -65,7 +44,6 @@ const ProductItem = ({ item }: { item: Product }) => {
       return;
     }
 
-    // Build product name with selected options appended
     const optionStrings = Object.entries(selectedOptions).map(
       ([key, val]) => ` - ${val}`
     );
@@ -178,9 +156,8 @@ const ProductItem = ({ item }: { item: Product }) => {
         )}
       </div>
 
-      {/* Render option groups dynamically */}
-      {Object.entries(optionsForCategory).map(([optionName, values]) => {
-        // Handle rendering for Color differently (colored circles), else radios for others
+      {/* Render only available product options from item.options */}
+      {Object.entries(item.options || {}).map(([optionName, values]) => {
         if (optionName.toLowerCase() === "color") {
           return (
             <div key={optionName} className="flex gap-2 mb-2">
