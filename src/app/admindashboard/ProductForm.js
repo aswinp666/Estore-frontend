@@ -259,18 +259,18 @@ const ProductForm = ({
                 Options
               </Typography>
 
-            {Object.entries(options).map(([optionKey, selectedValues]) => (
+             {Object.entries(categoryOptions[product.category]).map(([optionKey, optionValues]) => (
   <Box key={optionKey} sx={{ mb: 2 }}>
     <Typography variant="subtitle1" gutterBottom>
       {optionKey}
     </Typography>
     <FormGroup row>
-      {selectedValues.map((value) => (
+      {optionValues.map((value) => (
         <FormControlLabel
           key={value}
           control={
             <Checkbox
-              checked={true}
+              checked={options[optionKey]?.includes(value) || false}
               onChange={(e) => {
                 const isChecked = e.target.checked;
                 setOptions((prev) => {
@@ -291,7 +291,6 @@ const ProductForm = ({
     </FormGroup>
   </Box>
 ))}
-
             </Grid>
           )}
 
