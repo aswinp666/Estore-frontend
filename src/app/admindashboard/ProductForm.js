@@ -59,6 +59,7 @@ const ProductForm = ({
       reader.readAsDataURL(file);
     }
   };
+  
 
   // Update options state from comma-separated string input
   const handleOptionChange = (optionKey, value) => {
@@ -71,14 +72,24 @@ const ProductForm = ({
     }));
   };
 
-  // Extend the submit handler to add options to the form data
   const onSubmit = (e) => {
-    e.preventDefault();
-    // Create a synthetic event object merging product + options
-    // or you can pass options separately depending on your handler
-    const extendedProduct = { ...product, options };
-    handleSubmit(e, extendedProduct);
-  };
+  e.preventDefault();
+  const extendedProduct = { ...product, options };
+
+  const formData = new FormData();
+  formData.append('name', extendedProduct.name);
+  formData.append('price', extendedProduct.price);
+  formData.append('description', extendedProduct.description);
+  formData.append('category', extendedProduct.category);
+
+  if (extendedProduct.image instanceof File) {
+    formData.append('image', extendedProduct.image);
+  }
+
+  formData.append('options', JSON.stringify(extendedProduct.options));
+
+  handleSubmit(formData);
+};
 
   return (
     <GlassCard sx={{
