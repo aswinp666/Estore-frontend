@@ -11,9 +11,10 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  FormGroup, FormControlLabel, Checkbox
 } from '@mui/material';
-import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import { AddCircle as AddCircleIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import GlassCard from './GlassCard';
 
 const categories = [
@@ -45,17 +46,8 @@ const ProductForm = ({
 }) => {
   const [imagePreview, setImagePreview] = React.useState(null);
   
-  // Store actual options as arrays (like before)
+  // Manage options state (object with keys and arrays of values)
   const [options, setOptions] = React.useState(product.options || {});
-
-  // NEW: Store option inputs as strings to allow typing commas freely
-  const [optionStrings, setOptionStrings] = React.useState(() => {
-    const initialStrings = {};
-    Object.entries(product.options || {}).forEach(([key, arr]) => {
-      initialStrings[key] = arr.join(', ');
-    });
-    return initialStrings;
-  });
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -68,48 +60,37 @@ const ProductForm = ({
       reader.readAsDataURL(file);
     }
   };
+  
 
-  // Update optionStrings state without splitting — allows free typing
-  const handleOptionStringChange = (optionKey, value) => {
-    setOptionStrings(prev => ({
+  // Update options state from comma-separated string input
+  const handleOptionChange = (optionKey, value) => {
+    setOptions(prev => ({
       ...prev,
-      [optionKey]: value,
+      [optionKey]: value
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v.length > 0)
     }));
   };
 
-  // Sync optionStrings (comma-separated strings) into options arrays
-  const syncOptionStringsToOptions = () => {
-    const newOptions = {};
-    Object.entries(optionStrings).forEach(([key, str]) => {
-      newOptions[key] = str
-        .split(',')
-        .map(v => v.trim())
-        .filter(v => v.length > 0);
-    });
-    setOptions(newOptions);
-  };
+ const onSubmit = (e) => {
+  e.preventDefault();
 
-  const onSubmit = (e) => {
-    e.preventDefault();
+  const extendedProduct = { ...product, options };
+  const formData = new FormData();
 
-    syncOptionStringsToOptions(); // update options from strings before submit
+  formData.append('name', extendedProduct.name);
+  formData.append('price', extendedProduct.price);
+  formData.append('description', extendedProduct.description);
+  formData.append('category', extendedProduct.category);
+  if (extendedProduct.image instanceof File) {
+    formData.append('image', extendedProduct.image);
+  }
+  formData.append('options', JSON.stringify(extendedProduct.options));
 
-    // Use the latest options after syncing
-    const extendedProduct = { ...product, options };
+  handleSubmit(formData); // ✅ no event passed here
+};
 
-    const formData = new FormData();
-
-    formData.append('name', extendedProduct.name);
-    formData.append('price', extendedProduct.price);
-    formData.append('description', extendedProduct.description);
-    formData.append('category', extendedProduct.category);
-    if (extendedProduct.image instanceof File) {
-      formData.append('image', extendedProduct.image);
-    }
-    formData.append('options', JSON.stringify(extendedProduct.options));
-
-    handleSubmit(formData);
-  };
 
   return (
     <GlassCard sx={{
@@ -278,18 +259,38 @@ const ProductForm = ({
                 Options
               </Typography>
 
-              {Object.entries(categoryOptions[product.category]).map(([optionKey, optionValues]) => (
-                <TextField
-                  key={optionKey}
-                  label={`${optionKey} (comma separated)`}
-                  value={optionStrings[optionKey] || ''}
-                  onChange={(e) => handleOptionStringChange(optionKey, e.target.value)}
-                  fullWidth
-                  margin="normal"
-                  variant="outlined"
-                  helperText={`Available: ${optionValues.join(', ')}`}
-                />
-              ))}
+             {Object.entries(categoryOptions[product.category]).map(([optionKey, optionValues]) => (
+  <Box key={optionKey} sx={{ mb: 2 }}>
+    <Typography variant="subtitle1" gutterBottom>
+      {optionKey}
+    </Typography>
+    <FormGroup row>
+      {optionValues.map((value) => (
+        <FormControlLabel
+          key={value}
+          control={
+            <Checkbox
+              checked={options[optionKey]?.includes(value) || false}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                setOptions((prev) => {
+                  const currentValues = prev[optionKey] || [];
+                  return {
+                    ...prev,
+                    [optionKey]: isChecked
+                      ? [...currentValues, value]
+                      : currentValues.filter((v) => v !== value)
+                  };
+                });
+              }}
+            />
+          }
+          label={value}
+        />
+      ))}
+    </FormGroup>
+  </Box>
+))}
             </Grid>
           )}
 
@@ -309,52 +310,57 @@ const ProductForm = ({
                 fontSize: '0.875rem',
                 fontWeight: 500,
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #2979FF 0%, #2962FF 100%)',
-                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.4)'
+                  background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.3)'
                 }
               }}
             >
-              {product.image ? 'Change Image' : 'Upload Image'}
+              {product.image ? 'Change Image' : 'Upload Product Image'}
               <input
-                hidden
-                accept="image/*"
                 type="file"
-                name="image"
+                hidden
                 onChange={handleImageUpload}
+                accept="image/*"
+                required={!isEditing}
               />
             </Button>
-            {imagePreview && (
-              <Box
-                component="img"
-                src={imagePreview}
-                alt="Preview"
-                sx={{
-                  mt: 2,
-                  borderRadius: '12px',
-                  maxWidth: '100%',
-                  maxHeight: 200,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-                }}
-              />
+            {(product.image || imagePreview) && (
+              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  component="img"
+                  src={imagePreview || (typeof product.image === 'string' ? product.image : URL.createObjectURL(product.image))}
+                  alt="Preview"
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '8px',
+                    objectFit: 'cover',
+                    border: '1px solid rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {typeof product.image === 'string' ? 'Current image' : `Selected: ${product.image?.name}`}
+                </Typography>
+              </Box>
             )}
           </Grid>
 
           {/* Submit Button */}
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
             <Button
               type="submit"
               variant="contained"
-              size="large"
               fullWidth
               sx={{
+                height: '56px',
                 borderRadius: '12px',
-                background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
-                boxShadow: '0 4px 15px rgba(41, 98, 255, 0.3)',
-                fontWeight: 700,
+                fontWeight: 600,
                 fontSize: '1rem',
+                background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                boxShadow: '0 4px 15px rgba(41, 98, 255, 0.4)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #2979FF 0%, #2962FF 100%)',
-                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.5)'
+                  background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.6)'
                 }
               }}
             >
