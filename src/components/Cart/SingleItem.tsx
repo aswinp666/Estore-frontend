@@ -19,13 +19,13 @@ const SingleItem = ({ item }) => {
 
   const handleIncreaseQuantity = () => {
     setQuantity(quantity + 1);
-    dispatch(updateCartItemQuantity({ id: item.id, quantity: quantity + 1 }));
+    dispatch(updateCartItemQuantity({ productId: item.id, quantity: quantity + 1 }));
   };
 
   const handleDecreaseQuantity = () => {
     if (quantity > 1) {
       setQuantity(quantity - 1);
-      dispatch(updateCartItemQuantity({ id: item.id, quantity: quantity - 1 }));
+      dispatch(updateCartItemQuantity({ productId: item.id, quantity: quantity - 1 }));
     } else {
       return;
     }
