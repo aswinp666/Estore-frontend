@@ -25,11 +25,11 @@ const SingleOrder = ({ orderItem, smallView }: any) => {
       {!smallView && (
         <div className="items-center justify-between border-t border-gray-3 py-5 px-7.5 hidden md:flex">
           <div className="min-w-[111px]">
-            <Link href={`/order-details/${orderItem.orderId}`}>
-              <p className="text-custom-sm text-red">
-                #{orderItem.orderId.slice(-8)}
-              </p>
-            </Link>
+           <Link href={`/${orderItem.orderId}`}>
+  <p className="text-custom-sm text-red">
+    #{orderItem.orderId.slice(-8)}
+  </p>
+</Link>
           </div>
           <div className="min-w-[175px]">
             <p className="text-custom-sm text-dark">{orderItem.createdAt}</p>
@@ -74,9 +74,10 @@ const SingleOrder = ({ orderItem, smallView }: any) => {
             <div className="">
               <p className="text-custom-sm text-dark">
                 <span className="font-bold pr-2"> Order:</span>{" "}
-                <Link href={`/order-details/${orderItem.orderId}`}>
-                  #{orderItem.orderId.slice(-8)}
-                </Link>
+               <Link href={`/${orderItem.orderId}`}>
+  #{orderItem.orderId.slice(-8)}
+</Link>
+
               </p>
             </div>
             <div className="">
