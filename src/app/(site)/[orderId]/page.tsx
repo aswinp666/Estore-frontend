@@ -1,4 +1,5 @@
-// src/app/order-details/[orderId]/page.tsx
+// src/app/(site)/order-details/[orderId]/page.tsx
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image'; 
