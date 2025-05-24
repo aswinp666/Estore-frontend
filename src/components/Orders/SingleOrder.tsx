@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import OrderActions from "./OrderActions";
 import OrderModal from "./OrderModal";
 
@@ -24,9 +25,11 @@ const SingleOrder = ({ orderItem, smallView }: any) => {
       {!smallView && (
         <div className="items-center justify-between border-t border-gray-3 py-5 px-7.5 hidden md:flex">
           <div className="min-w-[111px]">
-            <p className="text-custom-sm text-red">
-              #{orderItem.orderId.slice(-8)}
-            </p>
+            <Link href={`/order-details/${orderItem.orderId}`}>
+              <p className="text-custom-sm text-red">
+                #{orderItem.orderId.slice(-8)}
+              </p>
+            </Link>
           </div>
           <div className="min-w-[175px]">
             <p className="text-custom-sm text-dark">{orderItem.createdAt}</p>
@@ -70,8 +73,10 @@ const SingleOrder = ({ orderItem, smallView }: any) => {
           <div className="py-4.5 px-7.5">
             <div className="">
               <p className="text-custom-sm text-dark">
-                <span className="font-bold pr-2"> Order:</span> #
-                {orderItem.orderId.slice(-8)}
+                <span className="font-bold pr-2"> Order:</span>{" "}
+                <Link href={`/order-details/${orderItem.orderId}`}>
+                  #{orderItem.orderId.slice(-8)}
+                </Link>
               </p>
             </div>
             <div className="">
