@@ -46,7 +46,7 @@ const Orders = () => {
 
         // If no token is found, set an error and stop loading
         if (!token) {
-          setError("User is not authenticated. Please log in.");
+          setError("Please log in to view your orders.");
           setLoading(false);
           return; // Exit the function
         }
