@@ -40,7 +40,7 @@ const Header = () => {
   localStorage.removeItem("cartTotalPrice"); // if you save total
 
   // Optional: reset Redux state by reloading (only if needed)
-  // window.location.reload(); // Removed this line as router.push will handle navigation
+  window.location.reload(); // Removed this line as router.push will handle navigation
 
   router.push("/signin"); // Redirect to the sign-in page
 };
