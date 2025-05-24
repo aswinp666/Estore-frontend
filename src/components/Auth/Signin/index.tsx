@@ -36,6 +36,7 @@ const Signin = () => {
       if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("yourAuthTokenKey", data.token);
 
       // 🔁 Force full reload after sign-in
       window.location.href = "/";
@@ -60,7 +61,7 @@ const Signin = () => {
       if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
-
+      localStorage.setItem("yourAuthTokenKey", data.token);
       // 🔁 Force full reload after sign-in
       window.location.href = "/";
     } catch (err) {
