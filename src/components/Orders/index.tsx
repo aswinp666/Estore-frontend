@@ -33,41 +33,37 @@ const Orders = () => {
   const [loading, setLoading] = useState<boolean>(true);
   // State to hold any error messages
   const [error, setError] = useState<string | null>(null);
-  // New state to explicitly track if the user is authenticated
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null means checking
 
   // useEffect hook to fetch user orders when the component mounts
   useEffect(() => {
     const fetchUserOrders = async () => {
       setLoading(true); // Set loading to true at the start of the fetch operation
-      setError(null);    // Clear any previous errors
-
-      // Retrieve the authentication token from local storage
-      const token = localStorage.getItem("yourAuthTokenKey");
-
-      // Set authentication status
-      if (token) {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-        setLoading(false); // Stop loading as we won't make an API call
-        return; // Exit the function, as no token means no authenticated request
-      }
+      setError(null);   // Clear any previous errors
 
       try {
+        // Retrieve the authentication token from local storage
+        const token = localStorage.getItem("yourAuthTokenKey");
+
+        // If no token is found, set an error and stop loading
+        if (!token) {
+          setError("User is not authenticated. Please log in.");
+          setLoading(false);
+          return; // Exit the function
+        }
+
         // Make the API call to fetch user orders
-        const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice/my-orders', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          }
-        });
+        // IMPORTANT: Ensure '/api/invoice/my-orders' is your correct backend endpoint.
+   const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice/my-orders', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+  }
+});
 
         // Check if the response was not successful (e.g., 4xx or 5xx status codes)
         if (!response.ok) {
-          // Handle specific unauthorized/forbidden errors (though frontend already checked token presence)
-          if (response.status === 401 || response.status === 403) {
-            setError("Session expired or unauthorized. Please log in again.");
-            setIsAuthenticated(false); // Update auth status if token is invalid on backend
+          // Handle specific unauthorized/forbidden errors
+          if (response.status === 401 || response.status === 403) { // Corrected syntax for OR condition
+            setError("Unauthorized access. Please log in again.");
           } else {
             // For other non-OK responses, throw an error
             throw new Error(`Failed to fetch orders. Status: ${response.status}`);
@@ -78,6 +74,7 @@ const Orders = () => {
         const data = await response.json();
 
         // Determine the raw orders array from the API response.
+        // It could be the data itself (if it's an array) or a property like 'data.orders'.
         const rawOrders: ApiOrder[] = Array.isArray(data) ? data : data.orders || [];
 
         // Transform the raw API order data into the format expected by SingleOrder
@@ -149,27 +146,12 @@ const Orders = () => {
     );
   }
 
-  // If not authenticated, display a message that no orders can be shown
-  if (isAuthenticated === false) {
-    return (
-      <div className="py-9.5 px-4 sm:px-7.5 xl:px-10 text-center">
-        <p className="text-gray-500 text-lg">
-          Please log in to view your order history.
-        </p>
-        {/* You might want to add a login button here */}
-        <p className="py-9.5 px-4 sm:px-7.5 xl:px-10 text-center text-gray-500">
-             You don&apos;t have any orders yet!
-        </p>
-      </div>
-    );
-  }
-
-
-  // Main component rendering for authenticated users
+  // Main component rendering
   return (
     <>
       <div className="w-full overflow-x-auto">
         {/* Order table header and items for medium and larger screens */}
+        {/* This div is hidden on small screens (md:hidden) */}
         <div className="min-w-[770px] hidden md:block">
           {orders.length > 0 && (
             <div className="items-center justify-between py-4.5 px-7.5 hidden md:flex ">
@@ -208,6 +190,7 @@ const Orders = () => {
         </div>
 
         {/* Order items for small screens (mobile view) */}
+        {/* This div is shown only on small screens (md:hidden) */}
         <div className="md:hidden">
           {orders.length > 0 ? (
             orders.map((orderItem) => (
