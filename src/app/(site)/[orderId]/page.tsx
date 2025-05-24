@@ -201,14 +201,28 @@ const OrderDetailsPage = () => {
                 <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Return Reason for: <span style={{ fontWeight: 'bold' }}>{item.name}</span></h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
                   {returnReasons.map((reason) => (
-                    <label key={reason} style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
+                    <label
+                      key={reason}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.875rem',
+                        padding: '0.5rem', // Added padding for better click area
+                        borderRadius: '0.25rem', // Slightly rounded corners
+                        cursor: 'pointer', // Indicate it's clickable
+                        backgroundColor: selectedReason === reason ? '#3b82f6' : 'transparent', // Blue background if selected
+                        color: selectedReason === reason ? '#fff' : '#374151', // White text if selected
+                        transition: 'background-color 0.2s ease-in-out, color 0.2s ease-in-out', // Smooth transition
+                        border: '1px solid #d1d5db' // Add a subtle border
+                      }}
+                    >
                       <input
                         type="radio"
                         name={`returnReason-${item._id}`}
                         value={reason}
                         checked={selectedReason === reason}
                         onChange={(e) => setSelectedReason(e.target.value)}
-                        style={{ marginRight: '0.75rem' }}
+                        style={{ marginRight: '0.75rem', accentColor: '#3b82f6' }} // This will style the radio button itself in modern browsers
                       />
                       {reason}
                     </label>
