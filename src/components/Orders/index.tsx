@@ -53,13 +53,11 @@ const Orders = () => {
 
         // Make the API call to fetch user orders
         // IMPORTANT: Ensure '/api/invoice/my-orders' is your correct backend endpoint.
-        // If your API uses cookies/sessions for authentication, uncomment 'credentials: "include"'.
-        const response = await fetch('/api/invoice/my-orders', {
-          headers: {
-            'Authorization': `Bearer ${token}`, // Include the authorization token in the header
-            // 'credentials': 'include', // Uncomment if your API uses cookies/sessions for auth
-          }
-        });
+   const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice/my-orders', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+  }
+});
 
         // Check if the response was not successful (e.g., 4xx or 5xx status codes)
         if (!response.ok) {
