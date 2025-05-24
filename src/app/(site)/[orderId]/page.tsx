@@ -62,7 +62,7 @@ const OrderDetailsPage = () => {
       const urlsToTry = [
         `https://estore-backend-dyl3.onrender.com/api/invoice/my-orders/${orderId}`,
         `https://estore-backend-dyl3.onrender.com/api/invoice/order/${orderId}`,
-        `https://estore-backend-dyl3.onrender.com/api/invoices/${orderId}`
+        `https://estore-backend-dyl3.onrender.com/api/invoice/${orderId}`
       ];
 
       let data: OrderDetailsData | null = null;
