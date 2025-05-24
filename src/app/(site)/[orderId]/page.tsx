@@ -51,7 +51,7 @@ const OrderDetailsPage = () => {
 
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("yourAuthTokenKey");
 
       if (!token) {
         setError("Authentication token not found. Please log in.");
