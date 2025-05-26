@@ -6,12 +6,13 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 
 interface CartItem {
-  _id: string;
+  _id: string; // This is the unique ID of the item within the cart/order
   name: string;
   price: number;
   quantity: number;
   image?: string;
-  productId?: string;
+  productId?: string; // ID of the product from the Product model
+  // New fields for return tracking
   returnStatus?: "NotReturned" | "ReturnRequested" | "Returned" | "ReturnRejected";
   returnReason?: string;
   returnDetails?: string;
@@ -47,6 +48,8 @@ const OrderDetailsPage = () => {
   const orderIdParam = params?.orderId;
   const orderId = typeof orderIdParam === 'string' ? orderIdParam : Array.isArray(orderIdParam) ? orderIdParam[0] : null;
 
+  console.log("RENDER: OrderDetailsPage component. Order ID from URL:", orderId); // LOG 1
+
   const [orderDetails, setOrderDetails] = useState<OrderDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +59,14 @@ const OrderDetailsPage = () => {
   const [returnDetails, setReturnDetails] = useState<string>('');
   const [submissionStatus, setSubmissionStatus] = useState<{ [cartItemId: string]: string }>({});
 
+  // LOG 2: See returningProductId state on every render
+  console.log("RENDER: Current returningProductId state:", returningProductId);
+
+
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!orderId) {
+        console.warn("FETCH: No orderId available. Skipping fetch."); // LOG 3
         setLoading(false);
         return;
       }
@@ -84,6 +92,7 @@ const OrderDetailsPage = () => {
 
       for (const url of urlsToTry) {
         attemptedUrl = url;
+        console.log("FETCH: Attempting to fetch order details from:", url); // LOG 4
         try {
           const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },
@@ -103,18 +112,23 @@ const OrderDetailsPage = () => {
                 responseOk = true;
                 break;
             } else {
+                console.warn(`Workspace: Fetched data ID mismatch or invalid structure for URL: ${url}`);
                 data = null;
             }
+          } else {
+            console.error(`Workspace: Failed from ${url} with status: ${response.status}, response text: ${await response.text()}`); // LOG 5
           }
         } catch (err) {
-          console.error(`Error fetching order details from ${url}:`, err);
+          console.error(`Workspace: Error fetching order details from ${url}:`, err); // LOG 6
         }
       }
 
       if (responseOk && data) {
         setOrderDetails(data);
+        console.log("FETCH: Order details loaded successfully:", data); // LOG 7
       } else {
         setError(`Failed to fetch order details for Order ID: ${orderId}. Please check the Order ID or try again later.`);
+        console.error(`Workspace: Failed from all attempted URLs. Last attempt: ${attemptedUrl}`); // LOG 8
       }
       setLoading(false);
     };
@@ -125,13 +139,16 @@ const OrderDetailsPage = () => {
   }, [orderId]);
 
   const handleReturnClick = (cartItemId: string) => {
+    console.log("HANDLE_RETURN_CLICK: Button clicked for cartItemId:", cartItemId); // LOG 9
     setReturningProductId(cartItemId);
+    console.log("HANDLE_RETURN_CLICK: returningProductId set to:", cartItemId); // LOG 10
     setSelectedReason('');
     setReturnDetails('');
     setSubmissionStatus(prev => ({ ...prev, [cartItemId]: '' }));
   };
 
   const handleCancelReturn = () => {
+    console.log("CANCEL_RETURN: Cancelling return request."); // LOG 11
     if (returningProductId) {
         setSubmissionStatus(prev => ({ ...prev, [returningProductId]: '' }));
     }
@@ -140,17 +157,18 @@ const OrderDetailsPage = () => {
     setReturnDetails('');
   };
 
-  // MODIFIED: Ensure cartItemId is directly used from returningProductId for consistency
-  const handleSubmitReturn = async () => { // Removed cartItemId from parameters
-    // We now rely solely on returningProductId, which should be set by handleReturnClick
+  const handleSubmitReturn = async () => {
     const currentCartItemId = returningProductId;
 
-    if (!currentCartItemId || !orderId) { // Simplified check
+    console.log("HANDLE_SUBMIT_RETURN: Function called. Checking data..."); // LOG 12
+    console.log("HANDLE_SUBMIT_RETURN: currentCartItemId:", currentCartItemId, "orderId:", orderId); // LOG 13
+
+    if (!currentCartItemId || !orderId) {
         setSubmissionStatus(prev => ({
             ...prev,
-            [currentCartItemId || 'unknown']: "Submission error: Product or Order ID missing.",
+            [currentCartItemId || 'unknown']: "Submission error: Product or Order ID missing. Check console.",
         }));
-        console.warn("Frontend - handleSubmitReturn called with missing data:", { currentCartItemId, orderId });
+        console.error("ERROR: handleSubmitReturn - Missing currentCartItemId or orderId.", { currentCartItemId, orderId }); // LOG 14 (Changed from warn to error for clarity)
         return;
     }
 
@@ -159,6 +177,7 @@ const OrderDetailsPage = () => {
             ...prev,
             [currentCartItemId]: "Please select a return reason.",
         }));
+        console.warn("WARNING: handleSubmitReturn - No return reason selected."); // LOG 15
         return;
     }
 
@@ -173,8 +192,16 @@ const OrderDetailsPage = () => {
         ...prev,
         [currentCartItemId]: "Authentication error. Please log in again.",
       }));
+      console.error("ERROR: handleSubmitReturn - Authentication token not found."); // LOG 16
       return;
     }
+
+    console.log("HANDLE_SUBMIT_RETURN: Sending API request for:", {
+        orderId,
+        cartItemId: currentCartItemId,
+        reason: selectedReason,
+        details: returnDetails
+    }); // LOG 17
 
     try {
       const response = await fetch(
@@ -200,6 +227,7 @@ const OrderDetailsPage = () => {
           ...prev,
           [currentCartItemId]: "Return requested successfully!",
         }));
+        console.log("API_SUCCESS: Return request successful. Updated order:", responseData.order); // LOG 18
         setTimeout(() => {
             setReturningProductId(null);
             setSelectedReason('');
@@ -212,9 +240,10 @@ const OrderDetailsPage = () => {
           ...prev,
           [currentCartItemId]: errorMessage,
         }));
+        console.error("API_ERROR: Return submission failed.", response.status, responseData); // LOG 19
       }
     } catch (err) {
-      console.error("Return submission network error:", err);
+      console.error("NETWORK_ERROR: Return submission network error:", err); // LOG 20
       setSubmissionStatus(prev => ({
           ...prev,
           [currentCartItemId]: "A network error occurred. Please check your internet connection.",
@@ -351,8 +380,7 @@ const OrderDetailsPage = () => {
                   ></textarea>
                   <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <button
-                      // MODIFIED: No longer passing item._id, relies on returningProductId state
-                      onClick={handleSubmitReturn}
+                      onClick={handleSubmitReturn} // This calls the function without a parameter
                       disabled={!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))}
                       style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
                     >
