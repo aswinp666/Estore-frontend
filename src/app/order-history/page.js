@@ -1,20 +1,25 @@
+// src/app/dashboard/order-history/page.js
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Box, Typography, Divider, Table, TableBody, TableCell, TableContainer, 
+import {
+  Box, Typography, Divider, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, useTheme, CircularProgress,
   TablePagination, Tooltip, Button, Stack, Avatar, Grid,
-  Select, MenuItem, FormControl, InputLabel // Added for status dropdown
+  Select, MenuItem, FormControl, InputLabel, // Added for status dropdown
+  Tabs, Tab // For the new tabbed interface
 } from '@mui/material';
-import { 
-  Receipt, ArrowDownward, ArrowUpward, FilterList, Search, 
-  Paid, Pending, Cancel, LocalShipping, DoneAll, HourglassEmpty, ShoppingBag, DeliveryDining, CheckCircle
-} from '@mui/icons-material'; // Added more icons
+import {
+  Receipt, ArrowDownward, ArrowUpward, Cancel, LocalShipping, CheckCircle,
+  HourglassEmpty, ShoppingBag, DeliveryDining, ShoppingCartCheckout, Undo // Added Undo for return
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
 // Define Order Statuses consistently
 const ORDER_STATUSES = ["Processing", "Packaged", "Shipped", "Out For Delivery", "Delivered", "Cancelled"];
+
+// Define Return Statuses for admin actions
+const ADMIN_RETURN_STATUSES = ["Returned", "ReturnRejected"]; // Admin can change to these
 
 const OrderHistory = () => {
   const theme = useTheme();
@@ -26,11 +31,11 @@ const OrderHistory = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderBy, setOrderBy] = useState('createdAt');
   const [order, setOrder] = useState('desc');
+  const [currentTab, setCurrentTab] = useState(0); // 0 for All Orders, 1 for Return Requests
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
-      // Ensure this API endpoint is correct and returns 'orderStatus' and 'paymentMethod'
       const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice');
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
@@ -43,12 +48,11 @@ const OrderHistory = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array, fetchInvoices itself doesn't change
+  }, []);
 
   useEffect(() => {
     fetchInvoices();
-  }, [fetchInvoices]); // fetchInvoices is now a dependency
-
+  }, [fetchInvoices]);
 
   const handleOpen = (invoice) => setSelectedOrder(invoice);
   const handleClose = () => setSelectedOrder(null);
@@ -68,13 +72,25 @@ const OrderHistory = () => {
     setOrderBy(property);
   };
 
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+    setPage(0); // Reset page when changing tabs
+  };
+
   // Function to update order status
   const handleOrderStatusChange = async (invoiceId, newStatus) => {
     try {
+      const token = localStorage.getItem("yourAuthTokenKey"); // Assuming admin token is stored
+      if (!token) {
+        alert("Authentication token not found. Please log in as admin.");
+        return;
+      }
+
       const response = await fetch(`https://estore-backend-dyl3.onrender.com/api/invoice/${invoiceId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`, // Include auth token
         },
         body: JSON.stringify({ orderStatus: newStatus }),
       });
@@ -89,13 +105,51 @@ const OrderHistory = () => {
       }
     } catch (err) {
       console.error("Status update error:", err);
-      alert("Failed to update status. Please try again."); // Simple alert for now
+      alert("Failed to update status. Please try again.");
+    }
+  };
+
+  // Function to update item return status (NEW)
+  const handleReturnAction = async (orderId, cartItemId, newReturnStatus) => {
+    try {
+      const token = localStorage.getItem("yourAuthTokenKey"); // Assuming admin token is stored
+      if (!token) {
+        alert("Authentication token not found. Please log in as admin.");
+        return;
+      }
+
+      const response = await fetch(
+        `https://estore-backend-dyl3.onrender.com/api/invoice/order/${orderId}/item/${cartItemId}/update-return-status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ newReturnStatus }),
+        }
+      );
+
+      const responseData = await response.json();
+
+      if (response.ok && responseData.order) {
+        // Update the selected order in state to reflect the change immediately
+        if (selectedOrder && selectedOrder._id === orderId) {
+          setSelectedOrder(responseData.order);
+        }
+        // Also refetch all invoices to update the main table
+        fetchInvoices();
+      } else {
+        alert(responseData.error || "Failed to update return status.");
+      }
+    } catch (err) {
+      console.error("Error updating return status:", err);
+      alert("A network error occurred while updating return status.");
     }
   };
 
 
   const sortedInvoices = [...invoices].sort((a, b) => {
-    // Handle potential undefined values for sorting keys
     const valA = a[orderBy] || '';
     const valB = b[orderBy] || '';
     if (valA < valB) return order === 'asc' ? -1 : 1;
@@ -103,7 +157,13 @@ const OrderHistory = () => {
     return 0;
   });
 
-  const paginatedInvoices = sortedInvoices.slice(
+  const filteredInvoices = currentTab === 0
+    ? sortedInvoices // All Orders
+    : sortedInvoices.filter(invoice =>
+        invoice.cartItems.some(item => item.returnStatus === "ReturnRequested")
+      ); // Only orders with items having "ReturnRequested" status
+
+  const paginatedInvoices = filteredInvoices.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -111,23 +171,23 @@ const OrderHistory = () => {
   // Combined status icon getter
   const getCombinedStatusIcon = (paymentStatus, orderStatus) => {
     if (paymentStatus === 'Failed' || orderStatus === 'Cancelled') return <Cancel fontSize="small" color="error" />;
-    if (paymentStatus === 'Pending' && orderStatus === 'Processing') return <HourglassEmpty fontSize="small" color="warning" />; // For COD pending confirmation
-    if (paymentStatus === 'Paid' || paymentStatus === 'Cash On Delivery') { // Paid or COD confirmed
+    if (paymentStatus === 'Pending' && orderStatus === 'Processing') return <HourglassEmpty fontSize="small" color="warning" />;
+    if (paymentStatus === 'Paid' || paymentStatus === 'Cash On Delivery') {
         switch (orderStatus?.toLowerCase()) {
             case 'processing': return <HourglassEmpty fontSize="small" color="action" />;
             case 'packaged': return <ShoppingBag fontSize="small" color="info" />;
             case 'shipped': return <LocalShipping fontSize="small" color="primary" />;
             case 'out for delivery': return <DeliveryDining fontSize="small" style={{ color: theme.palette.warning.dark }}/>;
             case 'delivered': return <CheckCircle fontSize="small" color="success" />;
-            default: return <Pending fontSize="small" />;
+            default: return <HourglassEmpty fontSize="small" />; // Default fallback for other statuses
         }
     }
-    return <Pending fontSize="small" />; // Default fallback
+    return <HourglassEmpty fontSize="small" />; // Default fallback
   };
-  
+
   const getStatusChipColor = (paymentStatus, orderStatus) => {
      if (paymentStatus === 'Failed' || orderStatus === 'Cancelled') return theme.palette.error.light;
-     if (paymentStatus === 'Pending' && orderStatus === 'Processing') return theme.palette.warning.light; // For COD pending confirmation
+     if (paymentStatus === 'Pending' && orderStatus === 'Processing') return theme.palette.warning.light;
      if (paymentStatus === 'Paid' || paymentStatus === 'Cash On Delivery') {
         switch (orderStatus?.toLowerCase()) {
             case 'processing': return theme.palette.action.disabledBackground;
@@ -145,7 +205,7 @@ const OrderHistory = () => {
   const getCombinedStatusLabel = (paymentStatus, orderStatus, paymentMethod) => {
     if (paymentStatus === 'Failed') return 'Payment Failed';
     if (orderStatus === 'Cancelled') return 'Order Cancelled';
-    
+
     if (paymentMethod === 'cod' && paymentStatus === 'Pending' && orderStatus === 'Processing') {
         return 'Pending Confirmation (COD)';
     }
@@ -156,8 +216,26 @@ const OrderHistory = () => {
     return paymentStatus?.charAt(0).toUpperCase() + paymentStatus?.slice(1) || 'Pending';
   };
 
+  const getReturnStatusChipColor = (returnStatus) => {
+    switch(returnStatus) {
+        case "ReturnRequested": return theme.palette.warning.main;
+        case "Returned": return theme.palette.success.main;
+        case "ReturnRejected": return theme.palette.error.main;
+        default: return theme.palette.grey[500]; // NotReturned or unexpected
+    }
+  };
 
-  if (loading && invoices.length === 0) { // Show loader only if invoices are not yet loaded
+  const getReturnStatusIcon = (returnStatus) => {
+    switch(returnStatus) {
+        case "ReturnRequested": return <ShoppingCartCheckout fontSize="small" />;
+        case "Returned": return <CheckCircle fontSize="small" />;
+        case "ReturnRejected": return <Cancel fontSize="small" />;
+        default: return <Undo fontSize="small" />; // Fallback
+    }
+  };
+
+
+  if (loading && invoices.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: theme.palette.background.default }}>
         <CircularProgress size={60} thickness={4} />
@@ -166,7 +244,7 @@ const OrderHistory = () => {
   }
 
   if (error) {
-    return ( /* Error UI as before */
+    return (
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 4, background: theme.palette.background.default, textAlign: 'center' }}>
             <Typography variant="h5" color="error" gutterBottom>Error Loading Orders</Typography>
             <Typography sx={{ mb: 3 }}>{error}</Typography>
@@ -178,7 +256,7 @@ const OrderHistory = () => {
   }
 
   if (!invoices || invoices.length === 0) {
-    return ( /* No orders UI as before */
+    return (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: theme.palette.background.default }}>
             <Typography variant="h5">No orders found. Start shopping!</Typography>
         </Box>
@@ -192,16 +270,20 @@ const OrderHistory = () => {
       </Typography>
 
       <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${theme.palette.divider}`, overflow: 'hidden', mb: 4 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="order history tabs"
+          sx={{ borderBottom: 1, borderColor: 'divider', background: theme.palette.background.paper }}>
+          <Tab label="All Orders" />
+          <Tab label="Return Requests" />
+        </Tabs>
+
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Recent Orders</Typography>
-          {/* Search/Filter Icons as before */}
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{currentTab === 0 ? "All Recent Orders" : "Pending Return Requests"}</Typography>
         </Box>
 
         <TableContainer>
-          <Table sx={{ minWidth: 750 }}> {/* Increased minWidth for new column */}
+          <Table sx={{ minWidth: 750 }}>
             <TableHead>
               <TableRow sx={{ background: theme.palette.background.paper }}>
-                {/* Table Headers as before, add one for Order Status Action */}
                 <TableCell sx={{ fontWeight: 600 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => handleRequestSort('_id')}>
                     Order ID {orderBy === '_id' && (order === 'asc' ? <ArrowUpward fontSize="small" sx={{ ml: 0.5 }} /> : <ArrowDownward fontSize="small" sx={{ ml: 0.5 }} />)}
@@ -219,8 +301,13 @@ const OrderHistory = () => {
                     Total {orderBy === 'grandTotal' && (order === 'asc' ? <ArrowUpward fontSize="small" sx={{ ml: 0.5 }} /> : <ArrowDownward fontSize="small" sx={{ ml: 0.5 }} />)}
                   </Box>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="center">Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="center">Update Status</TableCell> {/* New Column */}
+                <TableCell sx={{ fontWeight: 600 }} align="center">Order Status</TableCell>
+                {currentTab === 0 && ( // Show Update Status only on "All Orders" tab
+                    <TableCell sx={{ fontWeight: 600 }} align="center">Update Order Status</TableCell>
+                )}
+                {currentTab === 1 && ( // Show Return Status Summary only on "Return Requests" tab
+                    <TableCell sx={{ fontWeight: 600 }} align="center">Return Request Summary</TableCell>
+                )}
                 <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -230,7 +317,7 @@ const OrderHistory = () => {
                   <TableCell component="th" scope="row">
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>#{invoice._id?.slice(-6).toUpperCase()}</Typography>
                   </TableCell>
-                  <TableCell> {/* Customer Cell as before */}
+                  <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: theme.palette.primary.main, fontSize: '0.875rem' }}>
                         {invoice.billingData?.firstName?.charAt(0)}{invoice.billingData?.lastName?.charAt(0)}
@@ -246,7 +333,7 @@ const OrderHistory = () => {
                     </Box>
                   </TableCell>
                   <TableCell>{new Date(invoice.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</TableCell>
-                  <TableCell> {/* Items Cell as before */}
+                  <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Typography variant="body2" sx={{ mr: 1 }}>{invoice.cartItems?.length}</Typography>
                       <Tooltip title={invoice.cartItems?.map(item => item.name).join(', ')}>
@@ -256,9 +343,8 @@ const OrderHistory = () => {
                       </Tooltip>
                     </Box>
                   </TableCell>
-                  <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 600 }}>₹{invoice.grandTotal?.toFixed(2)}</Typography></TableCell>
-                  
-                  {/* Status Chip - Updated */}
+                  <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 600 }}>€{invoice.grandTotal?.toFixed(2)}</Typography></TableCell>
+
                   <TableCell align="center">
                     <Chip
                       icon={getCombinedStatusIcon(invoice.paymentStatus, invoice.orderStatus)}
@@ -266,45 +352,73 @@ const OrderHistory = () => {
                       size="small"
                       sx={{
                         backgroundColor: getStatusChipColor(invoice.paymentStatus, invoice.orderStatus),
-                        color: theme.palette.getContrastText(getStatusChipColor(invoice.paymentStatus, invoice.orderStatus)), // Ensure text is readable
+                        color: theme.palette.getContrastText(getStatusChipColor(invoice.paymentStatus, invoice.orderStatus)),
                         fontWeight: 500,
-                        minWidth: 130, // Adjust as needed
+                        minWidth: 130,
                       }}
                     />
                   </TableCell>
 
-                  {/* Order Status Update Dropdown - NEW */}
-                  <TableCell align="center">
-                    { invoice.orderStatus !== 'Delivered' && invoice.orderStatus !== 'Cancelled' && (invoice.paymentStatus === 'Paid' || invoice.paymentStatus === 'Cash On Delivery') ? (
-                        <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <InputLabel id={`status-select-label-${invoice._id}`}>Update</InputLabel>
-                        <Select
-                            labelId={`status-select-label-${invoice._id}`}
-                            value={invoice.orderStatus || ''}
-                            label="Update"
-                            onChange={(e) => handleOrderStatusChange(invoice._id, e.target.value)}
-                        >
-                            {ORDER_STATUSES.filter(status => status !== "Cancelled").map((status) => ( // Exclude "Cancelled" here, handle separately if needed
-                            <MenuItem key={status} value={status}>
-                                {status}
-                            </MenuItem>
-                            ))}
-                        </Select>
-                        </FormControl>
-                    ) : (
-                        <Typography variant="caption" color="text.secondary">
-                            {invoice.orderStatus === 'Delivered' ? 'Completed' : invoice.orderStatus === 'Cancelled' ? 'Cancelled' : 'N/A'}
-                        </Typography>
-                    )}
-                  </TableCell>
+                  {currentTab === 0 && (
+                      <TableCell align="center">
+                        { invoice.orderStatus !== 'Delivered' && invoice.orderStatus !== 'Cancelled' && (invoice.paymentStatus === 'Paid' || invoice.paymentStatus === 'Cash On Delivery') ? (
+                            <FormControl size="small" sx={{ minWidth: 150 }}>
+                            <InputLabel id={`status-select-label-${invoice._id}`}>Update</InputLabel>
+                            <Select
+                                labelId={`status-select-label-${invoice._id}`}
+                                value={invoice.orderStatus || ''}
+                                label="Update"
+                                onChange={(e) => handleOrderStatusChange(invoice._id, e.target.value)}
+                            >
+                                {ORDER_STATUSES.filter(status => status !== "Cancelled").map((status) => (
+                                <MenuItem key={status} value={status}>
+                                    {status}
+                                </MenuItem>
+                                ))}
+                            </Select>
+                            </FormControl>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">
+                                {invoice.orderStatus === 'Delivered' ? 'Completed' : invoice.orderStatus === 'Cancelled' ? 'Cancelled' : 'N/A'}
+                            </Typography>
+                        )}
+                      </TableCell>
+                  )}
 
-                  <TableCell align="right"> {/* Actions Cell as before */}
+                  {currentTab === 1 && (
+                      <TableCell align="center">
+                          {invoice.cartItems && invoice.cartItems.some(item => item.returnStatus !== "NotReturned") ? (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                  {invoice.cartItems.map((item) => (
+                                      item.returnStatus !== "NotReturned" && (
+                                          <Chip
+                                              key={item._id}
+                                              icon={getReturnStatusIcon(item.returnStatus)}
+                                              label={`${item.name.substring(0, 10)}${item.name.length > 10 ? '...' : ''}: ${item.returnStatus}`}
+                                              size="small"
+                                              sx={{
+                                                  mb: 0.5,
+                                                  backgroundColor: getReturnStatusChipColor(item.returnStatus),
+                                                  color: 'white',
+                                                  fontWeight: 500,
+                                              }}
+                                          />
+                                      )
+                                  ))}
+                              </Box>
+                          ) : (
+                              <Typography variant="caption" color="text.secondary">No requests</Typography>
+                          )}
+                      </TableCell>
+                  )}
+
+
+                  <TableCell align="right">
                     <Tooltip title="View details">
                       <IconButton onClick={() => handleOpen(invoice)} size="small" sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.light }}}>
                         <Receipt fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {/* Potentially add a cancel order button here if applicable */}
                     {invoice.orderStatus !== 'Delivered' && invoice.orderStatus !== 'Cancelled' && (
                         <Tooltip title="Cancel Order">
                             <IconButton onClick={() => handleOrderStatusChange(invoice._id, "Cancelled")} size="small" sx={{ color: theme.palette.error.main, '&:hover': { backgroundColor: theme.palette.error.light }}}>
@@ -322,7 +436,7 @@ const OrderHistory = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={invoices.length}
+          count={filteredInvoices.length} // Use filteredInvoices.length for count
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -331,10 +445,9 @@ const OrderHistory = () => {
         />
       </Paper>
 
-      {/* Order Details Modal - MODIFIED to show orderStatus */}
+      {/* Order Details Modal - MODIFIED to show orderStatus and return details */}
       {selectedOrder && (
-        <Paper // Using Paper as a modal container
-          open={Boolean(selectedOrder)} // This prop is for Modal, Paper doesn't use it directly
+        <Paper
           sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1300, display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 2, sm: 4 }, backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.5)' }}
         >
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}>
@@ -347,10 +460,9 @@ const OrderHistory = () => {
                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>Order Details</Typography>
                 <Typography variant="subtitle1" color="text.secondary">#{selectedOrder._id?.slice(-6).toUpperCase()}</Typography>
               </Box>
-              
+
               <Grid container spacing={4}>
-                <Grid item xs={12} md={6}> {/* Customer Info */}
-                    {/* ... (Customer Info as before, but update the status chip) ... */}
+                <Grid item xs={12} md={6}>
                     <Box sx={{ mb: 4 }}>
                         <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>Customer Information</Typography>
                         <Divider sx={{ mb: 2 }} />
@@ -361,7 +473,6 @@ const OrderHistory = () => {
                             </Avatar>
                             <Box>
                             <Typography sx={{ fontWeight: 600 }}>{selectedOrder.billingData?.firstName} {selectedOrder.billingData?.lastName}</Typography>
-                            {/* Updated Status Chip in Modal */}
                             <Chip
                                 icon={getCombinedStatusIcon(selectedOrder.paymentStatus, selectedOrder.orderStatus)}
                                 label={getCombinedStatusLabel(selectedOrder.paymentStatus, selectedOrder.orderStatus, selectedOrder.paymentMethod)}
@@ -369,7 +480,7 @@ const OrderHistory = () => {
                                 sx={{
                                     mt:1,
                                     backgroundColor: getStatusChipColor(selectedOrder.paymentStatus, selectedOrder.orderStatus),
-                                    color: 'white', // Assuming white text works for these background
+                                    color: 'white',
                                     fontWeight: 500
                                 }}
                             />
@@ -379,29 +490,28 @@ const OrderHistory = () => {
                             <Typography variant="body2" sx={{ mb: 1 }}><strong>Email:</strong> {selectedOrder.billingData?.email || 'N/A'}</Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}><strong>Phone:</strong> {selectedOrder.billingData?.phone || 'N/A'}</Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</Typography>
-                            <Typography variant="body2"><strong>Current Order Status:</strong> {selectedOrder.orderStatus || "N/A"}</Typography> {/* Display Order Status */}
+                            <Typography variant="body2"><strong>Current Order Status:</strong> {selectedOrder.orderStatus || "N/A"}</Typography>
                         </Box>
                         </Box>
                     </Box>
                 </Grid>
-                <Grid item xs={12} md={6}> {/* Payment Summary */}
-                  {/* ... (Payment Summary as before) ... */}
+                <Grid item xs={12} md={6}>
                    <Box sx={{ mb: 4 }}>
                         <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>Payment Summary</Typography>
                         <Divider sx={{ mb: 2 }} />
                         <Box sx={{ p: 3, borderRadius: 1, border: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper}}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                                 <Typography variant="body2">Subtotal:</Typography>
-                                <Typography variant="body2">₹{(selectedOrder.grandTotal - (selectedOrder.shippingFee || 0))?.toFixed(2)}</Typography>
+                                <Typography variant="body2">€{(selectedOrder.grandTotal - (selectedOrder.shippingFee || 0))?.toFixed(2)}</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                                 <Typography variant="body2">Shipping:</Typography>
-                                <Typography variant="body2">₹{selectedOrder.shippingFee?.toFixed(2) || '0.00'}</Typography>
+                                <Typography variant="body2">€{selectedOrder.shippingFee?.toFixed(2) || '0.00'}</Typography>
                             </Box>
                             <Divider sx={{ my: 2 }} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="body1" sx={{ fontWeight: 600 }}>Total:</Typography>
-                                <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>₹{selectedOrder.grandTotal?.toFixed(2)}</Typography>
+                                <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>€{selectedOrder.grandTotal?.toFixed(2)}</Typography>
                             </Box>
                              <Box sx={{ mt: 3 }}>
                                 <Typography variant="body2" sx={{ mb: 1 }}>
@@ -415,7 +525,7 @@ const OrderHistory = () => {
                     </Box>
                 </Grid>
               </Grid>
-              {/* Order Items Table as before */}
+
               <Box sx={{ mb: 4 }}>
                 <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>Order Items ({selectedOrder.cartItems?.length || 0})</Typography>
                 <Divider sx={{ mb: 2 }} />
@@ -435,10 +545,56 @@ const OrderHistory = () => {
                           <TableCell>
                             <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.name}</Typography>
                             <Typography variant="caption" color="text.secondary">SKU: {item._id?.slice(-6) || 'N/A'}</Typography>
+                            {/* Display Return Status Here */}
+                            {item.returnStatus && item.returnStatus !== "NotReturned" && (
+                                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                    <Chip
+                                        icon={getReturnStatusIcon(item.returnStatus)}
+                                        label={`Return: ${item.returnStatus}`}
+                                        size="small"
+                                        sx={{
+                                            backgroundColor: getReturnStatusChipColor(item.returnStatus),
+                                            color: 'white',
+                                            fontWeight: 500,
+                                            width: 'fit-content'
+                                        }}
+                                    />
+                                    {item.returnReason && (
+                                        <Typography variant="caption" display="block" sx={{ mt: 0.2, color: theme.palette.text.secondary }}>
+                                            Reason: {item.returnReason}
+                                        </Typography>
+                                    )}
+                                    {item.returnDetails && (
+                                        <Typography variant="caption" display="block" sx={{ mt: 0.1, color: theme.palette.text.secondary }}>
+                                            Details: {item.returnDetails}
+                                        </Typography>
+                                    )}
+                                    {/* Admin Action for Return Status (NEW) */}
+                                    {item.returnStatus === "ReturnRequested" && (
+                                        <Box sx={{ mt: 1 }}>
+                                            <FormControl size="small" fullWidth>
+                                                <InputLabel id={`return-status-label-${item._id}`}>Action Return</InputLabel>
+                                                <Select
+                                                    labelId={`return-status-label-${item._id}`}
+                                                    value={""} // No default selection, forces user to pick
+                                                    label="Action Return"
+                                                    onChange={(e) => handleReturnAction(selectedOrder._id, item._id, e.target.value)}
+                                                >
+                                                    {ADMIN_RETURN_STATUSES.map((status) => (
+                                                        <MenuItem key={status} value={status}>
+                                                            {status}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Box>
+                                    )}
+                                </Box>
+                            )}
                           </TableCell>
-                          <TableCell align="right"><Typography variant="body2">₹{item.discountedPrice?.toFixed(2)}</Typography></TableCell>
+                          <TableCell align="right"><Typography variant="body2">€{(item.discountedPrice || item.price)?.toFixed(2)}</Typography></TableCell>
                           <TableCell align="center"><Typography variant="body2">{item.quantity}</Typography></TableCell>
-                          <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 500 }}>₹{(item.discountedPrice * item.quantity).toFixed(2)}</Typography></TableCell>
+                          <TableCell align="right"><Typography variant="body2" sx={{ fontWeight: 500 }}>€{((item.discountedPrice || item.price) * item.quantity).toFixed(2)}</Typography></TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
