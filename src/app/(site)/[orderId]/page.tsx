@@ -24,6 +24,15 @@ interface OrderDetailsData {
   orderStatus: string;
   grandTotal: number;
   cartItems: CartItem[];
+  // Assuming these fields might be present for payment/billing info
+  billingData?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 const returnReasons = [
@@ -40,6 +49,8 @@ const OrderDetailsPage = () => {
   const orderIdParam = params?.orderId;
   const orderId = typeof orderIdParam === 'string' ? orderIdParam : Array.isArray(orderIdParam) ? orderIdParam[0] : null;
 
+  console.log("Frontend - Order ID from URL params:", orderId); // ADDED LOG for debugging
+
   const [orderDetails, setOrderDetails] = useState<OrderDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +62,11 @@ const OrderDetailsPage = () => {
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      if (!orderId) return;
+      if (!orderId) {
+        console.warn("Frontend - No orderId available in URL parameters. Cannot fetch order details.");
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       setError(null);
@@ -63,11 +78,10 @@ const OrderDetailsPage = () => {
         return;
       }
 
-      // Adjusted to try the most specific endpoint first if it's designed to return a single order directly
+      // Prioritize the route that matches your backend's router.get("/:id")
       const urlsToTry = [
-        `https://estore-backend-dyl3.onrender.com/api/invoice/order/${orderId}`, // Assumed endpoint for a single order by its ID
-        `https://estore-backend-dyl3.onrender.com/api/invoice/${orderId}`,       // Another potential endpoint for a single order
-        // `https://estore-backend-dyl3.onrender.com/api/invoice/my-orders/${orderId}` // This seems less likely for fetching a single specific order by ID, more for a list
+        `https://estore-backend-dyl3.onrender.com/api/invoice/${orderId}`, // Matches backend's router.get("/:id")
+        `https://estore-backend-dyl3.onrender.com/api/invoice/order/${orderId}`, // This route might not exist on your backend's invoice.js unless you add it
       ];
 
       let data: OrderDetailsData | null = null;
@@ -76,19 +90,20 @@ const OrderDetailsPage = () => {
 
       for (const url of urlsToTry) {
         attemptedUrl = url;
+        console.log("Frontend - Attempting to fetch order details from:", url); // ADDED LOG
         try {
           const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
             const responseData = await response.json();
-            // Check if the response is the order itself or nested
+            // Check if the response is the order itself or nested (e.g., { order: { ... } } or { invoice: { ... } })
             if (responseData && typeof responseData === 'object') {
-                if (responseData.order && typeof responseData.order === 'object') { // e.g. { order: { ... } }
+                if (responseData.order && typeof responseData.order === 'object') {
                     data = responseData.order;
-                } else if (responseData.invoice && typeof responseData.invoice === 'object') { // e.g. { invoice: { ... } }
+                } else if (responseData.invoice && typeof responseData.invoice === 'object') {
                     data = responseData.invoice;
-                } else if (responseData._id) { // e.g. { _id: ..., cartItems: ... }
+                } else if (responseData._id) { // Direct invoice object
                     data = responseData;
                 }
             }
@@ -96,19 +111,23 @@ const OrderDetailsPage = () => {
                 responseOk = true;
                 break;
             } else {
+                console.warn(`Frontend - Fetched data ID mismatch or invalid structure for URL: ${url}`);
                 data = null; // Reset data if it's not the correct order structure or ID
             }
+          } else {
+            console.error(`Frontend - Fetch failed from ${url} with status: ${response.status}, response text: ${await response.text()}`); // More detailed error
           }
         } catch (err) {
-          console.error(`Error fetching order details from ${url}:`, err);
+          console.error(`Frontend - Error fetching order details from ${url}:`, err);
         }
       }
 
       if (responseOk && data) {
         setOrderDetails(data);
+        console.log("Frontend - Order details loaded successfully:", data); // ADDED LOG
       } else {
         setError(`Failed to fetch order details for Order ID: ${orderId}. Please check the Order ID or try again later.`);
-        console.error(`Failed to fetch from all attempted URLs. Last attempt: ${attemptedUrl}`);
+        console.error(`Frontend - Failed to fetch from all attempted URLs. Last attempt: ${attemptedUrl}`);
       }
       setLoading(false);
     };
@@ -116,7 +135,7 @@ const OrderDetailsPage = () => {
     if (orderId) {
       fetchOrderDetails();
     }
-  }, [orderId]);
+  }, [orderId]); // orderId is a dependency here
 
   const handleReturnClick = (cartItemId: string) => {
     setReturningProductId(cartItemId);
@@ -135,7 +154,27 @@ const OrderDetailsPage = () => {
   };
 
   const handleSubmitReturn = async (cartItemId: string) => {
-    if (!returningProductId || !orderId || cartItemId !== returningProductId) return;
+    // Add a debugger statement to pause execution here
+    // debugger;
+
+    if (!returningProductId || !orderId || cartItemId !== returningProductId) {
+        console.warn("Frontend - handleSubmitReturn called with missing/mismatched data:", { returningProductId, orderId, cartItemId });
+        setSubmissionStatus(prev => ({
+            ...prev,
+            [cartItemId]: "Submission error: Internal data mismatch.",
+        }));
+        return;
+    }
+
+    if (!selectedReason) {
+        setSubmissionStatus(prev => ({
+            ...prev,
+            [returningProductId]: "Please select a return reason.",
+        }));
+        console.warn("Frontend - Submit clicked without a reason.");
+        return;
+    }
+
 
     setSubmissionStatus(prev => ({
       ...prev,
@@ -148,9 +187,17 @@ const OrderDetailsPage = () => {
         ...prev,
         [returningProductId]: "Authentication error. Please log in again.",
       }));
-      // setError("Authentication token not found. Please log in."); // General error can also be set
+      console.error("Frontend - Authentication token not found for return submission.");
       return;
     }
+
+    console.log("Frontend - Submitting return request with:", {
+        orderId,
+        cartItemId: returningProductId,
+        reason: selectedReason,
+        details: returnDetails,
+        tokenPresent: !!token
+    }); // ADDED LOG
 
     try {
       const response = await fetch(
@@ -174,24 +221,30 @@ const OrderDetailsPage = () => {
         setOrderDetails(responseData.order); // Update the entire order details with the response
         setSubmissionStatus(prev => ({
           ...prev,
-          [returningProductId]: "", // Clear submission status on success, as the UI will reflect the new returnStatus
+          [returningProductId]: "Return requested successfully!", // Success message
         }));
-        setReturningProductId(null); // Close the return form section
-        setSelectedReason('');
-        setReturnDetails('');
+        // Optional: Keep the form open briefly to show success, then close
+        setTimeout(() => {
+            setReturningProductId(null); // Close the return form section
+            setSelectedReason('');
+            setReturnDetails('');
+            setSubmissionStatus(prev => ({ ...prev, [cartItemId]: '' })); // Clear message
+        }, 1500); // Close after 1.5 seconds
       } else {
+        const errorMessage = responseData.error || responseData.message || "Failed to submit return request. Please try again.";
         setSubmissionStatus(prev => ({
           ...prev,
-          [returningProductId]: responseData.error || "Failed to submit return request. Please try again.",
+          [returningProductId]: errorMessage,
         }));
+        console.error("Frontend - Return submission API error:", response.status, responseData); // ADDED LOG
       }
     } catch (err) {
-      console.error("Return submission error:", err);
-      const specificCartItemId = returningProductId; // Capture before it might be reset
+      console.error("Frontend - Return submission network error:", err); // ADDED LOG
+      const specificCartItemId = returningProductId;
       if (specificCartItemId) {
           setSubmissionStatus(prev => ({
           ...prev,
-          [specificCartItemId]: "A network error occurred. Please try again.",
+          [specificCartItemId]: "A network error occurred. Please check your internet connection.",
           }));
       }
     }
@@ -233,7 +286,7 @@ const OrderDetailsPage = () => {
       <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem', color: '#374151' }}>Products in this Order</h2>
       <ul style={{ listStyle: 'none', padding: '0', margin: '0', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {orderDetails.cartItems.map((item) => {
-          const itemReturnStatus = item.returnStatus; // Directly use item from map as it's from the updated orderDetails state
+          const itemReturnStatus = item.returnStatus;
           const currentSubmissionStatus = submissionStatus[item._id] || '';
 
           return (
@@ -267,7 +320,7 @@ const OrderDetailsPage = () => {
                   ) : (
                     <button
                       onClick={() => handleReturnClick(item._id)}
-                      disabled={!!returningProductId}
+                      disabled={!!returningProductId} // Disable other return buttons if one is active
                       style={{ backgroundColor: '#4f46e5', color: '#fff', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: !!returningProductId ? 0.6 : 1 }}
                     >
                       Return This Product
@@ -279,15 +332,15 @@ const OrderDetailsPage = () => {
               {returningProductId === item._id && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
                   <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Return Reason for: <span style={{ fontWeight: 'bold' }}>{item.name}</span></h4>
-                  {currentSubmissionStatus && (currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("Authentication error")) && (
+                  {currentSubmissionStatus && (
                       <p style={{
-                          color: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#991b1b' : '#92400e',
+                          color: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#991b1b' : (currentSubmissionStatus.includes("Success") ? '#166534' : '#92400e'),
                           fontSize: '0.875rem',
                           marginBottom: '1rem',
                           padding: '0.75rem',
-                          backgroundColor: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fee2e2' : '#fef3c7',
+                          backgroundColor: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fee2e2' : (currentSubmissionStatus.includes("Success") ? '#dcfce7' : '#fef3c7'),
                           borderRadius: '0.375rem',
-                          border: `1px solid ${currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fca5a5' : '#fde68a'}`
+                          border: `1px solid ${currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fca5a5' : (currentSubmissionStatus.includes("Success") ? '#86efac' : '#fde68a')}`
                       }}>
                           {currentSubmissionStatus}
                       </p>
@@ -327,8 +380,8 @@ const OrderDetailsPage = () => {
                   <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <button
                       onClick={() => handleSubmitReturn(item._id)}
-                      disabled={!selectedReason || (currentSubmissionStatus && currentSubmissionStatus.includes("Submitting"))}
-                      style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentSubmissionStatus && currentSubmissionStatus.includes("Submitting"))) ? 0.6 : 1 }}
+                      disabled={!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))} // Disable on submit or success
+                      style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
                     >
                       {currentSubmissionStatus && currentSubmissionStatus.includes("Submitting") ? 'Submitting...' : 'Submit Return Request'}
                     </button>

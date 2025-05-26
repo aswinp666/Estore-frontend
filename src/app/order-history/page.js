@@ -6,12 +6,13 @@ import {
   Box, Typography, Divider, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, useTheme, CircularProgress,
   TablePagination, Tooltip, Button, Stack, Avatar, Grid,
-  Select, MenuItem, FormControl, InputLabel, // Added for status dropdown
-  Tabs, Tab // For the new tabbed interface
+  Select, MenuItem, FormControl, InputLabel,
+  Tabs, Tab
 } from '@mui/material';
 import {
   Receipt, ArrowDownward, ArrowUpward, Cancel, LocalShipping, CheckCircle,
-  HourglassEmpty, ShoppingBag, DeliveryDining, ShoppingCartCheckout, Undo // Added Undo for return
+  HourglassEmpty, ShoppingBag, DeliveryDining, ShoppingCartCheckout, Undo,
+  AssignmentReturn // Icon for general return overview
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
@@ -36,15 +37,27 @@ const OrderHistory = () => {
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice');
+      const token = localStorage.getItem("yourAuthTokenKey"); // Ensure admin has a token too
+      if (!token) {
+        setError("Authentication token not found. Please log in as admin.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
       }
       const data = await response.json();
       setInvoices(data);
+      console.log("Admin - Invoices fetched:", data); // ADDED LOG
     } catch (err) {
       setError(err.message);
-      console.error('Fetch error:', err);
+      console.error('Admin - Fetch invoices error:', err);
     } finally {
       setLoading(false);
     }
@@ -80,7 +93,7 @@ const OrderHistory = () => {
   // Function to update order status
   const handleOrderStatusChange = async (invoiceId, newStatus) => {
     try {
-      const token = localStorage.getItem("yourAuthTokenKey"); // Assuming admin token is stored
+      const token = localStorage.getItem("yourAuthTokenKey");
       if (!token) {
         alert("Authentication token not found. Please log in as admin.");
         return;
@@ -90,29 +103,28 @@ const OrderHistory = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`, // Include auth token
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ orderStatus: newStatus }),
       });
       if (!response.ok) {
-        throw new Error('Failed to update order status');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update order status');
       }
-      // Refresh invoices list to show the updated status
       fetchInvoices();
-      // If the detailed modal is open for this order, update its status too
       if (selectedOrder && selectedOrder._id === invoiceId) {
         setSelectedOrder(prev => ({ ...prev, orderStatus: newStatus }));
       }
     } catch (err) {
-      console.error("Status update error:", err);
-      alert("Failed to update status. Please try again.");
+      console.error("Admin - Order status update error:", err);
+      alert("Failed to update status: " + err.message);
     }
   };
 
   // Function to update item return status (NEW)
   const handleReturnAction = async (orderId, cartItemId, newReturnStatus) => {
     try {
-      const token = localStorage.getItem("yourAuthTokenKey"); // Assuming admin token is stored
+      const token = localStorage.getItem("yourAuthTokenKey");
       if (!token) {
         alert("Authentication token not found. Please log in as admin.");
         return;
@@ -139,11 +151,13 @@ const OrderHistory = () => {
         }
         // Also refetch all invoices to update the main table
         fetchInvoices();
+        alert("Return status updated successfully!");
       } else {
         alert(responseData.error || "Failed to update return status.");
+        console.error("Admin - Return status update API error:", response.status, responseData);
       }
     } catch (err) {
-      console.error("Error updating return status:", err);
+      console.error("Admin - Error updating return status:", err);
       alert("A network error occurred while updating return status.");
     }
   };
@@ -168,7 +182,7 @@ const OrderHistory = () => {
     page * rowsPerPage + rowsPerPage
   );
 
-  // Combined status icon getter
+  // Combined status icon getter (Order Status)
   const getCombinedStatusIcon = (paymentStatus, orderStatus) => {
     if (paymentStatus === 'Failed' || orderStatus === 'Cancelled') return <Cancel fontSize="small" color="error" />;
     if (paymentStatus === 'Pending' && orderStatus === 'Processing') return <HourglassEmpty fontSize="small" color="warning" />;
@@ -177,12 +191,12 @@ const OrderHistory = () => {
             case 'processing': return <HourglassEmpty fontSize="small" color="action" />;
             case 'packaged': return <ShoppingBag fontSize="small" color="info" />;
             case 'shipped': return <LocalShipping fontSize="small" color="primary" />;
-            case 'out for delivery': return <DeliveryDining fontSize="small" style={{ color: theme.palette.warning.dark }}/>;
+            case 'out for delivery': return <DeliveryDining fontSize="small" sx={{ color: theme.palette.warning.dark }}/>;
             case 'delivered': return <CheckCircle fontSize="small" color="success" />;
-            default: return <HourglassEmpty fontSize="small" />; // Default fallback for other statuses
+            default: return <HourglassEmpty fontSize="small" />;
         }
     }
-    return <HourglassEmpty fontSize="small" />; // Default fallback
+    return <HourglassEmpty fontSize="small" />;
   };
 
   const getStatusChipColor = (paymentStatus, orderStatus) => {
@@ -212,25 +226,25 @@ const OrderHistory = () => {
     if (paymentStatus === 'Paid' || (paymentMethod === 'cod' && paymentStatus !== 'Pending')) {
         return orderStatus?.charAt(0).toUpperCase() + orderStatus?.slice(1);
     }
-    // Default or other pending states
     return paymentStatus?.charAt(0).toUpperCase() + paymentStatus?.slice(1) || 'Pending';
   };
 
+  // Return Status related helpers (NEW)
   const getReturnStatusChipColor = (returnStatus) => {
     switch(returnStatus) {
         case "ReturnRequested": return theme.palette.warning.main;
         case "Returned": return theme.palette.success.main;
         case "ReturnRejected": return theme.palette.error.main;
-        default: return theme.palette.grey[500]; // NotReturned or unexpected
+        default: return theme.palette.grey[500];
     }
   };
 
   const getReturnStatusIcon = (returnStatus) => {
     switch(returnStatus) {
-        case "ReturnRequested": return <ShoppingCartCheckout fontSize="small" />;
-        case "Returned": return <CheckCircle fontSize="small" />;
-        case "ReturnRejected": return <Cancel fontSize="small" />;
-        default: return <Undo fontSize="small" />; // Fallback
+        case "ReturnRequested": return <AssignmentReturn fontSize="small" sx={{ color: 'white' }}/>;
+        case "Returned": return <CheckCircle fontSize="small" sx={{ color: 'white' }}/>;
+        case "ReturnRejected": return <Cancel fontSize="small" sx={{ color: 'white' }}/>;
+        default: return <Undo fontSize="small" sx={{ color: 'white' }}/>;
     }
   };
 
@@ -302,10 +316,10 @@ const OrderHistory = () => {
                   </Box>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="center">Order Status</TableCell>
-                {currentTab === 0 && ( // Show Update Status only on "All Orders" tab
+                {currentTab === 0 && (
                     <TableCell sx={{ fontWeight: 600 }} align="center">Update Order Status</TableCell>
                 )}
-                {currentTab === 1 && ( // Show Return Status Summary only on "Return Requests" tab
+                {currentTab === 1 && (
                     <TableCell sx={{ fontWeight: 600 }} align="center">Return Request Summary</TableCell>
                 )}
                 <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
@@ -387,27 +401,25 @@ const OrderHistory = () => {
 
                   {currentTab === 1 && (
                       <TableCell align="center">
-                          {invoice.cartItems && invoice.cartItems.some(item => item.returnStatus !== "NotReturned") ? (
+                          {invoice.cartItems && invoice.cartItems.some(item => item.returnStatus === "ReturnRequested") ? (
                               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                  {invoice.cartItems.map((item) => (
-                                      item.returnStatus !== "NotReturned" && (
-                                          <Chip
-                                              key={item._id}
-                                              icon={getReturnStatusIcon(item.returnStatus)}
-                                              label={`${item.name.substring(0, 10)}${item.name.length > 10 ? '...' : ''}: ${item.returnStatus}`}
-                                              size="small"
-                                              sx={{
-                                                  mb: 0.5,
-                                                  backgroundColor: getReturnStatusChipColor(item.returnStatus),
-                                                  color: 'white',
-                                                  fontWeight: 500,
-                                              }}
-                                          />
-                                      )
+                                  {invoice.cartItems.filter(item => item.returnStatus === "ReturnRequested").map((item) => (
+                                      <Chip
+                                          key={item._id}
+                                          icon={getReturnStatusIcon(item.returnStatus)}
+                                          label={`${item.name.substring(0, 10)}${item.name.length > 10 ? '...' : ''}: ${item.returnStatus}`}
+                                          size="small"
+                                          sx={{
+                                              mb: 0.5,
+                                              backgroundColor: getReturnStatusChipColor(item.returnStatus),
+                                              color: 'white',
+                                              fontWeight: 500,
+                                          }}
+                                      />
                                   ))}
                               </Box>
                           ) : (
-                              <Typography variant="caption" color="text.secondary">No requests</Typography>
+                              <Typography variant="caption" color="text.secondary">No active requests</Typography>
                           )}
                       </TableCell>
                   )}
@@ -436,7 +448,7 @@ const OrderHistory = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={filteredInvoices.length} // Use filteredInvoices.length for count
+          count={filteredInvoices.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
