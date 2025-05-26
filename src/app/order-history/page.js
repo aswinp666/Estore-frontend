@@ -15,6 +15,8 @@ import {
   AssignmentReturn // Icon for general return overview
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { ToastContainer, toast } from 'react-toastify'; // Import Toastify
+import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
 
 // Define Order Statuses consistently
 const ORDER_STATUSES = ["Processing", "Packaged", "Shipped", "Out For Delivery", "Delivered", "Cancelled"];
@@ -32,7 +34,7 @@ const OrderHistory = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [orderBy, setOrderBy] = useState('createdAt');
   const [order, setOrder] = useState('desc');
-  const [currentTab, setCurrentTab] = useState(0); // 0 for All Orders, 1 for Return Requests
+  const [currentTab, setCurrentTab] = useState(0); // 0 for All Orders, 1 for Return Requests, 2 for Return History
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -58,6 +60,7 @@ const OrderHistory = () => {
     } catch (err) {
       setError(err.message);
       console.error('Admin - Fetch invoices error:', err);
+      toast.error(`Error fetching orders: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -95,7 +98,7 @@ const OrderHistory = () => {
     try {
       const token = localStorage.getItem("yourAuthTokenKey");
       if (!token) {
-        alert("Authentication token not found. Please log in as admin.");
+        toast.error("Authentication token not found. Please log in as admin.");
         return;
       }
 
@@ -115,9 +118,10 @@ const OrderHistory = () => {
       if (selectedOrder && selectedOrder._id === invoiceId) {
         setSelectedOrder(prev => ({ ...prev, orderStatus: newStatus }));
       }
+      toast.success(`Order status updated to ${newStatus} successfully!`);
     } catch (err) {
       console.error("Admin - Order status update error:", err);
-      alert("Failed to update status: " + err.message);
+      toast.error("Failed to update status: " + err.message);
     }
   };
 
@@ -126,7 +130,7 @@ const OrderHistory = () => {
     try {
       const token = localStorage.getItem("yourAuthTokenKey");
       if (!token) {
-        alert("Authentication token not found. Please log in as admin.");
+        toast.error("Authentication token not found. Please log in as admin.");
         return;
       }
 
@@ -151,14 +155,14 @@ const OrderHistory = () => {
         }
         // Also refetch all invoices to update the main table
         fetchInvoices();
-        alert("Return status updated successfully!");
+        toast.success("Return status updated successfully!");
       } else {
-        alert(responseData.error || "Failed to update return status.");
+        toast.error(responseData.error || "Failed to update return status.");
         console.error("Admin - Return status update API error:", response.status, responseData);
       }
     } catch (err) {
       console.error("Admin - Error updating return status:", err);
-      alert("A network error occurred while updating return status.");
+      toast.error("A network error occurred while updating return status.");
     }
   };
 
@@ -171,11 +175,17 @@ const OrderHistory = () => {
     return 0;
   });
 
-  const filteredInvoices = currentTab === 0
-    ? sortedInvoices // All Orders
-    : sortedInvoices.filter(invoice =>
-        invoice.cartItems.some(item => item.returnStatus === "ReturnRequested")
-      ); // Only orders with items having "ReturnRequested" status
+  const filteredInvoices = sortedInvoices.filter(invoice => {
+    if (currentTab === 0) {
+      return true; // All Orders
+    } else if (currentTab === 1) {
+      return invoice.cartItems.some(item => item.returnStatus === "ReturnRequested"); // Only orders with items having "ReturnRequested" status
+    } else if (currentTab === 2) {
+      return invoice.cartItems.some(item => item.returnStatus === "Returned" || item.returnStatus === "ReturnRejected"); // Only orders with items having "Returned" or "ReturnRejected" status
+    }
+    return false;
+  });
+
 
   const paginatedInvoices = filteredInvoices.slice(
     page * rowsPerPage,
@@ -279,6 +289,7 @@ const OrderHistory = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 4 }, minHeight: '100vh', background: theme.palette.background.default }}>
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 4, textAlign: 'left', fontSize: { xs: '1.8rem', sm: '2.2rem' }}}>
         Order History
       </Typography>
@@ -288,10 +299,15 @@ const OrderHistory = () => {
           sx={{ borderBottom: 1, borderColor: 'divider', background: theme.palette.background.paper }}>
           <Tab label="All Orders" />
           <Tab label="Return Requests" />
+          <Tab label="Return History" />
         </Tabs>
 
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{currentTab === 0 ? "All Recent Orders" : "Pending Return Requests"}</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {currentTab === 0 ? "All Recent Orders" :
+             currentTab === 1 ? "Pending Return Requests" :
+             "Completed Return History"}
+          </Typography>
         </Box>
 
         <TableContainer>
@@ -319,8 +335,8 @@ const OrderHistory = () => {
                 {currentTab === 0 && (
                     <TableCell sx={{ fontWeight: 600 }} align="center">Update Order Status</TableCell>
                 )}
-                {currentTab === 1 && (
-                    <TableCell sx={{ fontWeight: 600 }} align="center">Return Request Summary</TableCell>
+                {(currentTab === 1 || currentTab === 2) && (
+                    <TableCell sx={{ fontWeight: 600 }} align="center">Return Summary</TableCell>
                 )}
                 <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
               </TableRow>
@@ -399,11 +415,17 @@ const OrderHistory = () => {
                       </TableCell>
                   )}
 
-                  {currentTab === 1 && (
+                  {(currentTab === 1 || currentTab === 2) && (
                       <TableCell align="center">
-                          {invoice.cartItems && invoice.cartItems.some(item => item.returnStatus === "ReturnRequested") ? (
+                          {invoice.cartItems && invoice.cartItems.some(item =>
+                              (currentTab === 1 && item.returnStatus === "ReturnRequested") ||
+                              (currentTab === 2 && (item.returnStatus === "Returned" || item.returnStatus === "ReturnRejected"))
+                          ) ? (
                               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                  {invoice.cartItems.filter(item => item.returnStatus === "ReturnRequested").map((item) => (
+                                  {invoice.cartItems.filter(item =>
+                                      (currentTab === 1 && item.returnStatus === "ReturnRequested") ||
+                                      (currentTab === 2 && (item.returnStatus === "Returned" || item.returnStatus === "ReturnRejected"))
+                                  ).map((item) => (
                                       <Chip
                                           key={item._id}
                                           icon={getReturnStatusIcon(item.returnStatus)}
@@ -419,7 +441,7 @@ const OrderHistory = () => {
                                   ))}
                               </Box>
                           ) : (
-                              <Typography variant="caption" color="text.secondary">No active requests</Typography>
+                              <Typography variant="caption" color="text.secondary">N/A</Typography>
                           )}
                       </TableCell>
                   )}
