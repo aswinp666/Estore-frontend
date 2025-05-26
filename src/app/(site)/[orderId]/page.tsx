@@ -126,6 +126,10 @@ const OrderDetailsPage = () => {
       if (responseOk && data) {
         setOrderDetails(data);
         console.log("FETCH: Order details loaded successfully:", data); // LOG 7
+        // Add log to check the first item's _id if data is loaded
+        if (data.cartItems && data.cartItems.length > 0) {
+            console.log("FETCH: First cart item _id:", data.cartItems[0]._id); // NEW LOG 7a
+        }
       } else {
         setError(`Failed to fetch order details for Order ID: ${orderId}. Please check the Order ID or try again later.`);
         console.error(`Workspace: Failed from all attempted URLs. Last attempt: ${attemptedUrl}`); // LOG 8
@@ -168,7 +172,7 @@ const OrderDetailsPage = () => {
             ...prev,
             [currentCartItemId || 'unknown']: "Submission error: Product or Order ID missing. Check console.",
         }));
-        console.error("ERROR: handleSubmitReturn - Missing currentCartItemId or orderId.", { currentCartItemId, orderId }); // LOG 14 (Changed from warn to error for clarity)
+        console.error("ERROR: handleSubmitReturn - Missing currentCartItemId or orderId.", { currentCartItemId, orderId }); // LOG 14
         return;
     }
 
@@ -321,7 +325,7 @@ const OrderDetailsPage = () => {
                   ) : (
                     <button
                       onClick={() => handleReturnClick(item._id)}
-                      disabled={!!returningProductId}
+                      disabled={false} // <--- THIS IS THE CRUCIAL CHANGE FOR TESTING
                       style={{ backgroundColor: '#4f46e5', color: '#fff', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: !!returningProductId ? 0.6 : 1 }}
                     >
                       Return This Product
@@ -380,7 +384,7 @@ const OrderDetailsPage = () => {
                   ></textarea>
                   <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <button
-                      onClick={handleSubmitReturn} // This calls the function without a parameter
+                      onClick={handleSubmitReturn}
                       disabled={!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))}
                       style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
                     >
