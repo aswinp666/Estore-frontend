@@ -128,7 +128,10 @@ const OrderDetailsPage = () => {
         console.log("FETCH: Order details loaded successfully:", data); // LOG 7
         // Add log to check the first item's _id if data is loaded
         if (data.cartItems && data.cartItems.length > 0) {
-            console.log("FETCH: First cart item _id:", data.cartItems[0]._id); // NEW LOG 7a
+            console.log("FETCH: First cart item in data (full object):", data.cartItems[0]); // NEW LOG 7a
+            console.log("FETCH: First cart item _id (extracted from data):", data.cartItems[0]._id); // NEW LOG 7b
+        } else {
+            console.warn("FETCH: No cart items found in order data or cartItems array is empty."); // NEW LOG for empty cart
         }
       } else {
         setError(`Failed to fetch order details for Order ID: ${orderId}. Please check the Order ID or try again later.`);
@@ -145,7 +148,7 @@ const OrderDetailsPage = () => {
   const handleReturnClick = (cartItemId: string) => {
     console.log("HANDLE_RETURN_CLICK: Button clicked for cartItemId:", cartItemId); // LOG 9
     setReturningProductId(cartItemId);
-    console.log("HANDLE_RETURN_CLICK: returningProductId set to:", cartItemId); // LOG 10
+    console.log("HANDLE_RETURN_CLICK: returningProductId state set to:", cartItemId); // LOG 10
     setSelectedReason('');
     setReturnDetails('');
     setSubmissionStatus(prev => ({ ...prev, [cartItemId]: '' }));
