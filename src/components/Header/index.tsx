@@ -1,15 +1,15 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import CustomSelect from "./CustomSelect"; // Assuming this component exists and is styled
-import { menuData } from "./menuData"; // Assuming this data is structured correctly
-import Dropdown from "./Dropdown"; // Assuming this component exists and is styled
+import CustomSelect from "./CustomSelect";
+import { menuData } from "./menuData";
+import Dropdown from "./Dropdown";
 import { useAppSelector } from "@/redux/store";
 import { useSelector } from "react-redux";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
 import Image from "next/image";
-import ProductSearchModal from './ProductSearchModal'; // Assuming this component exists
+import ProductSearchModal from './ProductSearchModal';
 import { useRouter } from "next/navigation";
 
 const Header = () => {
@@ -22,7 +22,7 @@ const Header = () => {
   const router = useRouter();
 
   const product = useAppSelector((state) => state.cartReducer.items);
-  const totalPrice = useSelector(selectTotalPrice); // Total price is not used in the UI, but kept for context
+  const totalPrice = useSelector(selectTotalPrice);
 
   useEffect(() => {
     // Check if user is logged in when component mounts
@@ -30,17 +30,17 @@ const Header = () => {
     setIsLoggedIn(!!user);
   }, []);
 
-  const handleSignOut = () => {
-    // Remove user session / authentication token
-    localStorage.removeItem("yourAuthTokenKey");
-    localStorage.removeItem("user");
+ const handleSignOut = () => {
+  // Remove user session / authentication token
+  localStorage.removeItem("yourAuthTokenKey"); // <--- Ensure this key matches your actual auth token key!
+  localStorage.removeItem("user");
 
-    // Clear cart from localStorage manually (frontend only)
-    localStorage.removeItem("cartItems");
-    localStorage.removeItem("cartTotalPrice");
+  // Clear cart from localStorage manually (frontend only)
+  localStorage.removeItem("cartItems");
+  localStorage.removeItem("cartTotalPrice");
 
-    router.push("/signin"); // Redirect to the sign-in page
-  };
+  router.push("/signin"); // Redirect to the sign-in page
+};
 
   const handleOpenCartModal = () => {
     openCartModal();
@@ -56,6 +56,7 @@ const Header = () => {
     setOpenModal(false);
   };
 
+
   // Sticky menu
   const handleStickyMenu = () => {
     if (window.scrollY >= 80) {
@@ -65,12 +66,13 @@ const Header = () => {
     }
   };
 
+  // Fix: Added dependency array and cleanup for useEffect for handleStickyMenu
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
-    return () => window.removeEventListener("scroll", handleStickyMenu); // Cleanup
+    return () => window.removeEventListener("scroll", handleStickyMenu);
   }, []);
 
-  // Options for the custom select (if still needed)
+
   const options = [
     { label: "All Categories", value: "0" },
     { label: "TV", value: "1" },
@@ -84,37 +86,39 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed left-0 top-0 w-full z-50 bg-white transition-all duration-300 ease-in-out ${
-        stickyMenu ? "shadow-md py-3" : "py-4"
+      className={`fixed left-0 top-0 w-full z-50 bg-white transition-all ease-in-out duration-300 ${
+        stickyMenu ? "shadow-md py-3" : "py-4" // Adjusted padding for sleekness
       }`}
     >
       <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
         {/* */}
         <div
-          className={`flex items-center justify-between gap-5 transition-all duration-200 ease-out ${
-            stickyMenu ? "py-2" : "py-4" // Adjusted padding for sticky vs non-sticky
+          className={`flex flex-col lg:flex-row gap-5 items-end lg:items-center xl:justify-between ease-out duration-200 ${
+            stickyMenu ? "py-2" : "py-4" // Adjusted padding for sleekness
           }`}
         >
-          {/* Logo and Mobile Account/Cart */}
-          <div className="flex items-center justify-between w-full lg:w-auto gap-5">
+          {/* */}
+          <div className="flex items-center justify-between w-full lg:w-auto">
             <Link className="flex-shrink-0" href="/">
               <Image
                 src="/images/logo/logo.png"
                 alt="Logo"
-                width={180} // Adjusted for better mobile scaling
-                height={30} // Adjusted for better mobile scaling
+                width={180} // Adjusted size for mobile sleekness
+                height={30} // Adjusted size for mobile sleekness
               />
             </Link>
 
-            {/* Mobile Account and Cart - Visible on small screens, hidden on large */}
+            {/* Mobile-specific account and cart icons next to logo */}
             <div className="flex items-center gap-4 lg:hidden">
+              {/* Mobile Account / Sign In/Out */}
               <Link
                 href={isLoggedIn ? "#" : "/signin"}
-                className="flex items-center gap-1.5 text-dark hover:text-blue transition-colors"
+                className="flex items-center text-dark hover:text-blue transition-colors"
                 onClick={isLoggedIn ? handleSignOut : undefined}
+                title={isLoggedIn ? "Sign Out" : "Sign In"} // Added title for accessibility
               >
                 <svg
-                  className="fill-current w-5 h-5"
+                  className="fill-current w-5 h-5" // Smaller icons for mobile
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -132,17 +136,16 @@ const Header = () => {
                     fill="#3C50E0"
                   />
                 </svg>
-                <span className="text-sm font-medium">
-                  {isLoggedIn ? "Sign Out" : "Sign In"}
-                </span>
               </Link>
 
+              {/* Mobile Cart */}
               <button
                 onClick={handleOpenCartModal}
-                className="relative flex items-center gap-1.5 text-dark hover:text-blue transition-colors"
+                className="relative flex items-center text-dark hover:text-blue transition-colors"
+                title="View Cart" // Added title for accessibility
               >
                 <svg
-                  className="fill-current w-5 h-5"
+                  className="fill-current w-5 h-5" // Smaller icons for mobile
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -170,6 +173,7 @@ const Header = () => {
                     fill="#3C50E0"
                   />
                 </svg>
+
                 <span className="flex items-center justify-center font-bold text-xs absolute -right-2 -top-2.5 bg-blue w-4.5 h-4.5 rounded-full text-white">
                   {product.length}
                 </span>
@@ -177,55 +181,53 @@ const Header = () => {
 
               {/* Hamburger Toggle BTN */}
               <button
-                aria-label="Toggle Navigation"
+                id="Toggle"
+                aria-label="Toggle Navigation" // Changed to Toggle Navigation for clarity
                 className="lg:hidden block"
                 onClick={() => setNavigationOpen(!navigationOpen)}
               >
                 <span className="block relative cursor-pointer w-5.5 h-5.5">
-                  <span className="du-block absolute right-0 w-full h-full">
+                  <span className="absolute right-0 w-full h-full"> {/* Simplified from du-block */}
                     <span
-                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 transition-all duration-200 ease-in-out ${
-                        navigationOpen && "translate-x-[110%] opacity-0"
+                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 ease-in-out duration-200 ${
+                        navigationOpen ? "translate-x-[110%] opacity-0" : "" // Simpler, cleaner animation
                       }`}
                     ></span>
                     <span
-                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 transition-all duration-200 ease-in-out ${
-                        navigationOpen && "translate-x-[110%] opacity-0"
+                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 ease-in-out duration-200 ${
+                        navigationOpen ? "translate-x-[110%] opacity-0" : "" // Simpler, cleaner animation
                       }`}
                     ></span>
                     <span
-                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 transition-all duration-200 ease-in-out ${
-                        navigationOpen && "translate-x-[110%] opacity-0"
+                      className={`block relative top-0 left-0 bg-dark rounded-sm w-full h-0.5 my-1 ease-in-out duration-200 ${
+                        navigationOpen ? "translate-x-[110%] opacity-0" : "" // Simpler, cleaner animation
                       }`}
                     ></span>
                   </span>
 
                   <span className="block absolute right-0 w-full h-full rotate-45">
                     <span
-                      className={`block bg-dark rounded-sm transition-all duration-200 ease-in-out absolute left-2.5 top-0 w-0.5 h-full ${
-                        !navigationOpen && "!h-0"
+                      className={`block bg-dark rounded-sm ease-in-out duration-200 absolute left-2.5 top-0 w-0.5 h-full ${
+                        !navigationOpen ? "!h-0" : ""
                       }`}
                     ></span>
                     <span
-                      className={`block bg-dark rounded-sm transition-all duration-200 ease-in-out absolute left-0 top-2.5 w-full h-0.5 ${
-                        !navigationOpen && "!w-0"
+                      className={`block bg-dark rounded-sm ease-in-out duration-200 absolute left-0 top-2.5 w-full h-0.5 ${
+                        !navigationOpen ? "!w-0" : ""
                       }`}
                     ></span>
                   </span>
                 </span>
               </button>
-              {/* */}
             </div>
           </div>
 
-          {/* Search Bar - Full width on mobile, inline on desktop */}
-          <div className="w-full lg:max-w-[475px] hidden lg:block">
-            {/* Hidden on small screens, shown on large */}
+          {/* */}
+          <div className="max-w-[475px] w-full hidden lg:block">
             <form>
               <div className="flex items-center">
-                {/* CustomSelect remains if needed */}
+                {/* CustomSelect can be uncommented if you want it */}
                 {/* <CustomSelect options={options} defaultValue={options[0]} /> */}
-
                 <div className="relative w-full">
                   <input
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -264,7 +266,7 @@ const Header = () => {
             </form>
           </div>
 
-          {/* Desktop Call and Account/Cart - Hidden on small screens, visible on large */}
+          {/* */}
           <div className="hidden lg:flex items-center gap-7.5">
             {/* 24/7 Support */}
             <div className="flex items-center gap-3.5">
@@ -292,28 +294,30 @@ const Header = () => {
                   fill="#3C50E0"
                 />
               </svg>
+
               <div>
-                <span className="block text-xs text-gray-600 uppercase">
+                <span className="block text-xs text-gray-600 uppercase"> {/* Changed text-2xs to text-xs, dark-4 to gray-600 */}
                   24/7 SUPPORT
                 </span>
-                <p className="font-semibold text-sm text-dark">
+                <p className="font-semibold text-sm text-dark"> {/* Changed text-custom-sm to text-sm, font-medium to font-semibold */}
                   (+965) 7492-3477
                 </p>
               </div>
             </div>
 
-            {/* divider */}
-            <span className="w-px h-7.5 bg-gray-4"></span>
+            {/* */}
+            <span className="hidden xl:block w-px h-7.5 bg-gray-4"></span>
 
             <div className="flex items-center gap-5">
-              {/* Account */}
+              {/* Desktop Account / Sign In/Out */}
               <Link
                 href={isLoggedIn ? "#" : "/signin"}
                 className="flex items-center gap-2.5 text-dark hover:text-blue transition-colors"
                 onClick={isLoggedIn ? handleSignOut : undefined}
               >
                 <svg
-                  className="fill-current w-6 h-6"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -331,24 +335,25 @@ const Header = () => {
                     fill="#3C50E0"
                   />
                 </svg>
+
                 <div>
                   <span className="block text-xs text-gray-600 uppercase">
-                    Account
+                    account
                   </span>
                   <p className="font-semibold text-sm text-dark">
                     {isLoggedIn ? "Sign Out" : "Sign In"}
                   </p>
                 </div>
               </Link>
-
-              {/* Cart */}
+              {/* Desktop Cart */}
               <button
                 onClick={handleOpenCartModal}
-                className="relative flex items-center gap-2.5 text-dark hover:text-blue transition-colors"
+                className="flex items-center gap-2.5 text-dark hover:text-blue transition-colors"
               >
                 <span className="inline-block relative">
                   <svg
-                    className="fill-current w-6 h-6"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -376,15 +381,17 @@ const Header = () => {
                       fill="#3C50E0"
                     />
                   </svg>
+
                   <span className="flex items-center justify-center font-bold text-xs absolute -right-2 -top-2.5 bg-blue w-4.5 h-4.5 rounded-full text-white">
                     {product.length}
                   </span>
                 </span>
+
                 <div>
-                  <span className="block text-xs text-gray-600 uppercase">
-                    Cart
+                  <span className="block text-xs text-gray-600 uppercase"> {/* Changed text-2xs to text-xs, dark-4 to gray-600 */}
+                    cart
                   </span>
-                  <p className="font-semibold text-sm text-dark">
+                  <p className="font-semibold text-sm text-dark"> {/* Changed text-custom-sm to text-sm, font-medium to font-semibold */}
                     ${totalPrice.toFixed(2)}
                   </p>
                 </div>
@@ -392,60 +399,23 @@ const Header = () => {
             </div>
           </div>
         </div>
-
-        {/* Search Bar on Mobile (Separate section for better layout control) */}
-        <div className="lg:hidden w-full mb-4">
-          <form>
-            <div className="relative w-full">
-              <input
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onClick={() => setOpenModal(true)}
-                value={searchQuery}
-                type="search"
-                name="search"
-                id="search-mobile"
-                placeholder="I am shopping for..."
-                autoComplete="off"
-                className="w-full rounded-md bg-gray-1 border border-gray-3 py-2.5 pl-4 pr-10 outline-none focus:border-blue focus:ring-1 focus:ring-blue transition-all duration-200"
-              />
-              <button
-                id="search-btn-mobile"
-                aria-label="Search"
-                className="flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 text-dark hover:text-blue transition-colors duration-200"
-              >
-                <svg
-                  className="fill-current"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M17.2687 15.6656L12.6281 11.8969C14.5406 9.28123 14.3437 5.5406 11.9531 3.1781C10.6875 1.91248 8.99995 1.20935 7.19995 1.20935C5.39995 1.20935 3.71245 1.91248 2.44683 3.1781C-0.168799 5.79373 -0.168799 10.0687 2.44683 12.6844C3.71245 13.95 5.39995 14.6531 7.19995 14.6531C8.91558 14.6531 10.5187 14.0062 11.7843 12.8531L16.4812 16.65C16.5937 16.7344 16.7343 16.7906 16.875 16.7906C17.0718 16.7906 17.2406 16.7062 17.3531 16.5656C17.5781 16.2844 17.55 15.8906 17.2687 15.6656ZM7.19995 13.3875C5.73745 13.3875 4.38745 12.825 3.34683 11.7844C1.20933 9.64685 1.20933 6.18748 3.34683 4.0781C4.38745 3.03748 5.73745 2.47498 7.19995 2.47498C8.66245 2.47498 10.0125 3.03748 11.0531 4.0781C13.1906 6.2156 13.1906 9.67498 11.0531 11.7844C10.0406 12.825 8.66245 13.3875 7.19995 13.3875Z"
-                    fill=""
-                  />
-                </svg>
-              </button>
-            </div>
-          </form>
-        </div>
+        {/* */}
       </div>
 
-      {/* Navigation and Bottom Bar */}
-      <div className="border-t border-gray-200"> {/* Lighter border for sleek look */}
+      <div className="border-t border-gray-200"> {/* Changed border-gray-3 to border-gray-200 for sleekness */}
         <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
           <div className="flex items-center justify-between">
-            {/* Main Nav (Mobile Slide-in / Desktop visible) */}
+            {/* */}
             <div
               className={`w-full xl:w-auto absolute right-4 top-full xl:static h-0 xl:h-auto overflow-hidden xl:overflow-visible transition-all duration-300 ease-in-out ${
                 navigationOpen
-                  ? "visible opacity-100 bg-white shadow-lg border border-gray-300 !h-auto max-h-[400px] rounded-md p-5 mt-2 lg:mt-0" // Added mt-2 for mobile
-                  : "invisible opacity-0"
+                  ? `visible opacity-100 bg-white shadow-lg border border-gray-300 !h-auto max-h-[400px] overflow-y-scroll rounded-md p-5 mt-2 lg:mt-0` // Added mt-2 for mobile spacing
+                  : `invisible opacity-0`
               } xl:visible xl:opacity-100`}
             >
+              {/* */}
               <nav>
-                <ul className="flex flex-col xl:flex-row gap-5 xl:gap-6">
+                <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
                   {menuData.map((menuItem, i) =>
                     menuItem.submenu ? (
                       <Dropdown
@@ -456,12 +426,12 @@ const Header = () => {
                     ) : (
                       <li
                         key={i}
-                        className="group relative before:w-0 before:h-[3px] before:bg-blue-600 before:absolute before:left-0 before:top-0 before:rounded-b-[3px] before:ease-out before:duration-200 hover:before:w-full"
+                        className="group relative before:w-0 before:h-[3px] before:bg-blue-600 before:absolute before:left-0 before:top-0 before:rounded-b-[3px] before:ease-out before:duration-200 hover:before:w-full "
                       >
                         <Link
                           href={menuItem.path}
-                          className={`hover:text-blue-600 text-sm font-semibold text-dark flex py-2 xl:py-4 transition-colors duration-200 ${
-                            stickyMenu ? "xl:py-3" : "xl:py-5" // Slightly adjusted padding for sticky
+                          className={`hover:text-blue-600 text-sm font-semibold text-dark flex py-2 xl:py-4 transition-colors duration-200 ${ // Changed text-custom-sm to text-sm, font-medium to font-semibold, adjusted py for sleekness
+                            stickyMenu ? "xl:py-3" : "xl:py-5" // Adjusted padding for sticky
                           }`}
                         >
                           {menuItem.name}
@@ -471,15 +441,17 @@ const Header = () => {
                   )}
                 </ul>
               </nav>
+              {/* // */}
             </div>
+            {/* // */}
 
-            {/* Nav Right (Admin, Wishlist - Desktop Only) */}
+            {/* */}
             <div className="hidden xl:block">
               <ul className="flex items-center gap-5.5">
                 <li className="py-4">
                   <a
                     href="/admindashboard"
-                    className="flex items-center gap-1.5 font-semibold text-sm text-dark hover:text-blue transition-colors"
+                    className="flex items-center gap-1.5 font-semibold text-sm text-dark hover:text-blue transition-colors" // Changed text-custom-sm to text-sm, font-medium to font-semibold
                   >
                     <svg
                       className="fill-current w-4 h-4"
@@ -499,10 +471,11 @@ const Header = () => {
                     Admin
                   </a>
                 </li>
+
                 <li className="py-4">
                   <Link
                     href="/wishlist"
-                    className="flex items-center gap-1.5 font-semibold text-sm text-dark hover:text-blue transition-colors"
+                    className="flex items-center gap-1.5 font-semibold text-sm text-dark hover:text-blue transition-colors" // Changed text-custom-sm to text-sm, font-medium to font-semibold
                   >
                     <svg
                       className="fill-current w-4 h-4"
@@ -520,6 +493,7 @@ const Header = () => {
                 </li>
               </ul>
             </div>
+            {/* */}
           </div>
         </div>
       </div>
