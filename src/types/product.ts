@@ -1,13 +1,17 @@
 export type Product = {
-  _id: string;  // <-- change here
+  _id: string;
   name: string;
-  reviews: number;
+  // Remove 'reviews: number;'
   price: number;
-  discountedPrice: number;
+  discountedPrice?: number; // Make it optional if it's not always present
   category: string;
   imageUrl: string;
   options?: {
     Color?: string[];
     RAM?: string[];
+    // Add other options as needed
   };
+  // Add the new fields from your Mongoose Product model
+  averageRating?: number; // Now optional, as some products might not have ratings yet
+  numOfReviews?: number; // Now optional
 };

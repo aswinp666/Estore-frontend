@@ -1,3 +1,4 @@
+// src/app/(site)/components/ProductItem.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
@@ -46,16 +47,16 @@ const ProductItem = ({ item }: { item: Product }) => {
     );
 
     dispatch(
-  addItemToCart({
-    productId: item._id,  // <-- Use productId key here!
-    name: `${item.name}${optionStrings.join("")}`,
-    price: item.price,
-    discountedPrice: item.discountedPrice || item.price,
-    quantity: 1,
-    imageUrl: item.imageUrl,
-  })
-);
-};
+      addItemToCart({
+        productId: item._id,
+        name: `${item.name}${optionStrings.join("")}`,
+        price: item.price,
+        discountedPrice: item.discountedPrice || item.price,
+        quantity: 1,
+        imageUrl: item.imageUrl,
+      })
+    );
+  };
 
   // Save cart to backend on cartItems or userEmail change
   useEffect(() => {
@@ -74,7 +75,7 @@ const ProductItem = ({ item }: { item: Product }) => {
         })),
       };
 
-      console.log("Sending cart to backend:", payload); // DEBUG LOG
+      console.log("Sending cart to backend:", payload);
 
       try {
         const res = await fetch("https://estore-backend-dyl3.onrender.com/api/cart", {
@@ -102,6 +103,8 @@ const ProductItem = ({ item }: { item: Product }) => {
         ...item,
         status: "available",
         quantity: 1,
+        // Ensure discountedPrice is explicitly handled if WishListItem requires it
+        discountedPrice: item.discountedPrice !== undefined ? item.discountedPrice : item.price,
       })
     );
   };
@@ -109,6 +112,10 @@ const ProductItem = ({ item }: { item: Product }) => {
   const handleProductDetails = () => {
     dispatch(updateproductDetails({ ...item }));
   };
+
+  // Calculate the number of filled stars based on averageRating
+  // Explicitly cast to Number to resolve TypeScript error
+  const filledStars = Math.round(Number(item.averageRating) || 0);
 
   return (
     <div className="group border rounded-xl p-4 shadow-sm">
@@ -143,14 +150,19 @@ const ProductItem = ({ item }: { item: Product }) => {
           {[...Array(5)].map((_, i) => (
             <Image
               key={i}
-              src="/images/icons/icon-star.svg"
+              src={i < filledStars ? "/images/icons/icon-star.svg" : "/images/icons/icon-star-outline.svg"}
               alt="star icon"
               width={14}
               height={14}
             />
           ))}
         </div>
-        <p className="text-custom-sm">({item.reviews})</p>
+        {/* Display average rating and total number of reviews */}
+        <p className="text-custom-sm">
+          {item.averageRating !== undefined && item.averageRating !== null
+            ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined ? ` / ${item.numOfReviews}` : ''})`
+            : '(No reviews)'}
+        </p>
       </div>
 
       <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
