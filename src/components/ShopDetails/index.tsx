@@ -1,8 +1,7 @@
 // src/app/(site)/shop-details/index.tsx
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; // Added useMemo
 import { FaHeart, FaMinus, FaPlus } from "react-icons/fa";
-// Removed AiFillStar as it's replaced by FaStar/FaRegStar for consistency
 import { MdCheckCircle } from "react-icons/md";
 import Breadcrumb from "../Common/Breadcrumb";
 import Image from "next/image";
@@ -13,7 +12,7 @@ import { useDispatch } from "react-redux";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 
-// NEW: Import Font Awesome star icons for dynamic rendering
+// Import Font Awesome star icons for dynamic rendering
 import { FaStar, FaRegStar } from 'react-icons/fa';
 
 // Define a type for reviews to improve type safety
@@ -32,38 +31,61 @@ const ShopDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const dispatch = useDispatch<AppDispatch>();
 
-  const alreadyExist = localStorage.getItem("productDetails");
-  const productFromStorage = useAppSelector((state) => state.productDetailsReducer.value);
+  // Get product from Redux
+  const productFromRedux = useAppSelector((state) => state.productDetailsReducer.value);
 
-  // Ensure product has a default structure if not found in storage or Redux
-  const product = alreadyExist
-    ? JSON.parse(alreadyExist)
-    : (productFromStorage._id !== "0" ? productFromStorage : null); // Check for default empty product
+  // Use useMemo to stabilize the product object derived from local storage/Redux
+  // This ensures 'product' reference doesn't change on every render unless its ID actually changes
+  const product = useMemo(() => {
+    // Try to get from localStorage first
+    const alreadyExist = typeof window !== 'undefined' ? localStorage.getItem("productDetails") : null;
+    if (alreadyExist) {
+      try {
+        const parsedProduct = JSON.parse(alreadyExist);
+        // Only return if it's a valid product (not default empty object)
+        if (parsedProduct && parsedProduct._id !== "0") {
+          return parsedProduct;
+        }
+      } catch (e) {
+        console.error("Error parsing productDetails from localStorage", e);
+        // Fallback if parsing fails
+      }
+    }
+    // Fallback to Redux product if localStorage is empty, invalid, or default "0"
+    if (productFromRedux && productFromRedux._id !== "0") {
+      return productFromRedux;
+    }
+    return null; // Return null if no valid product found
+  }, [productFromRedux]); // Only re-memoize if productFromRedux changes
+
+  // Effect to save product to localStorage whenever 'product' changes
+  // This is separated from the review fetching logic to prevent re-fetching
+  // if only the localStorage state changes without the product itself changing.
+  useEffect(() => {
+    if (product && product._id && product._id !== "0") {
+      localStorage.setItem("productDetails", JSON.stringify(product));
+    } else if (typeof window !== 'undefined' && localStorage.getItem("productDetails")) {
+      // Clear localStorage if product becomes invalid
+      localStorage.removeItem("productDetails");
+    }
+  }, [product]); // Only run when the product object reference changes
 
   // NEW: State for product reviews and loading/error states
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
 
+  // Effect to fetch reviews, ONLY dependent on product._id
   useEffect(() => {
-    // Save to local storage only if product is valid
-    if (product && product._id !== "0") {
-      localStorage.setItem("productDetails", JSON.stringify(product));
-    } else {
-      localStorage.removeItem("productDetails"); // Clear if product is invalid
-    }
-
-    // NEW: Fetch reviews for the product
     const fetchReviews = async () => {
-      if (!product?._id || product._id === '0') { // Only fetch if product ID is valid
-        setReviews([]); // Clear reviews if no product or default product
+      if (!product?._id || product._id === '0') {
+        setReviews([]);
         setLoadingReviews(false);
         return;
       }
       setLoadingReviews(true);
       setErrorReviews(null);
       try {
-        // IMPORTANT: Make sure this API endpoint is correct for fetching reviews for a product ID
         const res = await fetch(`https://estore-backend-dyl3.onrender.com/api/products/${product._id}/reviews`);
         if (res.ok) {
           const data = await res.json();
@@ -80,10 +102,10 @@ const ShopDetails = () => {
       }
     };
 
-    if (product?._id) { // Trigger fetch when product ID changes
+    if (product?._id) {
       fetchReviews();
     }
-  }, [product?._id, product]); // Depend on product._id to re-fetch if product changes
+  }, [product?._id]); // IMPORTANT: Only re-run when product ID changes, not the whole product object
 
   // Calculate filled stars for main product display based on averageRating
   const filledStarsMain = Math.round(Number(product?.averageRating) || 0);
@@ -98,7 +120,7 @@ const ShopDetails = () => {
         productId: product._id,
         name: product.name,
         price: product.price,
-        discountedPrice: product.discountedPrice !== undefined ? product.discountedPrice : product.price, // Ensure discountedPrice is included
+        discountedPrice: product.discountedPrice !== undefined ? product.discountedPrice : product.price,
         quantity,
         imageUrl: product.imageUrl,
       })
@@ -115,7 +137,6 @@ const ShopDetails = () => {
         ...product,
         status: "available",
         quantity: 1,
-        // Ensure discountedPrice is explicitly handled if WishListItem requires it
         discountedPrice: product.discountedPrice !== undefined ? product.discountedPrice : product.price,
       })
     );
@@ -132,8 +153,8 @@ const ShopDetails = () => {
               <div className="lg:max-w-[570px] w-full">
                 <div className="rounded-lg shadow-1 bg-gray-2 p-4 sm:p-7.5 flex items-center justify-center">
                   <Image
-                    src={product.imageUrl || "/images/placeholder.png"} // Added fallback for imageUrl
-                    alt={product.name || "Product image"} // Added fallback for alt text
+                    src={product.imageUrl || "/images/placeholder.png"}
+                    alt={product.name || "Product image"}
                     width={400}
                     height={400}
                     className="object-contain"
@@ -144,7 +165,7 @@ const ShopDetails = () => {
               <div className="max-w-[539px] w-full">
                 <h2 className="font-semibold text-2xl text-dark mb-3">{product.name}</h2>
 
-                <div className="flex items-center gap-2 mb-4"> {/* Removed text-[#FFA645] as color is set by icons */}
+                <div className="flex items-center gap-2 mb-4">
                   {/* Dynamic star display for overall average rating */}
                   {[...Array(5)].map((_, i) => (
                     <span key={i}>
@@ -156,7 +177,6 @@ const ShopDetails = () => {
                     </span>
                   ))}
                   <span className="text-sm text-gray-600 ml-2">
-                    {/* Display average rating and total number of reviews */}
                     {product.averageRating !== undefined && product.averageRating !== null && product.numOfReviews !== undefined
                       ? `(${product.averageRating.toFixed(1)} / ${product.numOfReviews} ${product.numOfReviews === 1 ? 'customer review' : 'customer reviews'})`
                       : '(No reviews yet)'}
@@ -168,7 +188,6 @@ const ShopDetails = () => {
                   <span className="text-green">In Stock</span>
                 </div>
 
-                {/* Price display with discounted price */}
                 <h3 className="text-xl font-bold text-dark mb-3">
                   {product.discountedPrice !== undefined && product.discountedPrice !== product.price ? (
                     <>
@@ -193,12 +212,11 @@ const ShopDetails = () => {
                   </li>
                 </ul>
 
-                {/* Quantity and Add to Cart/Wishlist Buttons */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex items-center border border-gray-300 rounded-md">
                     <button
                       className="w-10 h-10 flex items-center justify-center"
-                      onClick={() => setQuantity(quantity > 1 ? quantity - 1 : 1)} // Prevent quantity from going below 1
+                      onClick={() => setQuantity(quantity > 1 ? quantity - 1 : 1)}
                     >
                       <FaMinus />
                     </button>
@@ -218,7 +236,7 @@ const ShopDetails = () => {
                     onClick={handleAddToCart}
                   >
                     Add to Cart
-                  </button> {/* Changed "Purchase Now" to "Add to Cart" for clarity, adjust if needed */}
+                  </button>
 
                   <button
                     className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:text-white hover:bg-dark"
@@ -235,8 +253,8 @@ const ShopDetails = () => {
         <div className="text-center text-lg py-20">Please select a product to view details.</div>
       )}
 
-      {/* NEW: Reviews Section for Product Details Page */}
-      {product && product._id !== "0" && ( // Only show if a valid product is loaded
+      {/* Reviews Section for Product Details Page */}
+      {product && product._id !== "0" && (
         <section className="py-10">
           <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
             <h2 className="text-2xl font-semibold mb-5">User Ratings and Reviews</h2>
@@ -247,7 +265,7 @@ const ShopDetails = () => {
               <p className="text-red-500">Error: {errorReviews}</p>
             ) : reviews.length > 0 ? (
               <ul>
-                {reviews.map((review: Review) => ( // Use Review type for clarity
+                {reviews.map((review: Review) => (
                   <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
