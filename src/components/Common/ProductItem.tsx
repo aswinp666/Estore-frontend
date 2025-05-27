@@ -1,7 +1,8 @@
 // src/app/(site)/components/ProductItem.tsx
 "use client";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
+// REMOVE: import Image from "next/image"; // You'll still need Image for the product photo, but not for stars
+import Image from "next/image"; // Keep this line for the product image itself
 import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { addItemToCart } from "@/redux/features/cart-slice";
@@ -11,6 +12,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+
+// NEW: Import Font Awesome star icons from react-icons
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const ProductItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
@@ -114,7 +118,6 @@ const ProductItem = ({ item }: { item: Product }) => {
   };
 
   // Calculate the number of filled stars based on averageRating
-  // Explicitly cast to Number to resolve TypeScript error
   const filledStars = Math.round(Number(item.averageRating) || 0);
 
   return (
@@ -147,14 +150,15 @@ const ProductItem = ({ item }: { item: Product }) => {
 
       <div className="flex items-center gap-2.5 mb-2">
         <div className="flex items-center gap-1">
+          {/* REPLACE THIS SECTION WITH REACT ICONS */}
           {[...Array(5)].map((_, i) => (
-            <Image
-              key={i}
-              src={i < filledStars ? "/images/icons/icon-star.svg" : "/images/icons/icon-star-outline.svg"}
-              alt="star icon"
-              width={14}
-              height={14}
-            />
+            <span key={i}> {/* Use a span to apply color via Tailwind */}
+              {i < filledStars ? (
+                <FaStar className="text-yellow-500" size={14} /> // Filled star, set color
+              ) : (
+                <FaRegStar className="text-gray-400" size={14} /> // Empty star, set color
+              )}
+            </span>
           ))}
         </div>
         {/* Display average rating and total number of reviews */}
