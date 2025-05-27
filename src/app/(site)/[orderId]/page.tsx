@@ -16,6 +16,8 @@ interface CartItem {
   returnStatus?: "NotReturned" | "ReturnRequested" | "Returned" | "ReturnRejected";
   returnReason?: string;
   returnDetails?: string;
+  // New fields for rating status (client-side flag for this order instance)
+  hasRated?: boolean; // To track if the user has rated this specific item in the order
 }
 
 interface OrderDetailsData {
@@ -48,7 +50,7 @@ const OrderDetailsPage = () => {
   const orderIdParam = params?.orderId;
   const orderId = typeof orderIdParam === 'string' ? orderIdParam : Array.isArray(orderIdParam) ? orderIdParam[0] : null;
 
-  console.log("RENDER: OrderDetailsPage component. Order ID from URL:", orderId); // LOG 1
+  console.log("RENDER: OrderDetailsPage component. Order ID from URL:", orderId);
 
   const [orderDetails, setOrderDetails] = useState<OrderDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,14 +61,19 @@ const OrderDetailsPage = () => {
   const [returnDetails, setReturnDetails] = useState<string>('');
   const [submissionStatus, setSubmissionStatus] = useState<{ [cartItemId: string]: string }>({});
 
-  // LOG 2: See returningProductId state on every render
+  // New state for rating
+  const [ratingProductId, setRatingProductId] = useState<string | null>(null); // Stores the cartItemId of the product being rated
+  const [currentRating, setCurrentRating] = useState<number>(0);
+  const [ratingComment, setRatingComment] = useState<string>(''); // State for the review comment
+  const [ratingSubmissionStatus, setRatingSubmissionStatus] = useState<{ [cartItemId: string]: string }>({});
+
   console.log("RENDER: Current returningProductId state:", returningProductId);
 
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!orderId) {
-        console.warn("FETCH: No orderId available. Skipping fetch."); // LOG 3
+        console.warn("FETCH: No orderId available. Skipping fetch.");
         setLoading(false);
         return;
       }
@@ -92,7 +99,7 @@ const OrderDetailsPage = () => {
 
       for (const url of urlsToTry) {
         attemptedUrl = url;
-        console.log("FETCH: Attempting to fetch order details from:", url); // LOG 4
+        console.log("FETCH: Attempting to fetch order details from:", url);
         try {
           const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },
@@ -116,26 +123,28 @@ const OrderDetailsPage = () => {
                 data = null;
             }
           } else {
-            console.error(`Workspace: Failed from ${url} with status: ${response.status}, response text: ${await response.text()}`); // LOG 5
+            console.error(`Workspace: Failed from ${url} with status: ${response.status}, response text: ${await response.text()}`);
           }
         } catch (err) {
-          console.error(`Workspace: Error fetching order details from ${url}:`, err); // LOG 6
+          console.error(`Workspace: Error fetching order details from ${url}:`, err);
         }
       }
 
       if (responseOk && data) {
+        // Here, you could potentially check if the user has already rated items
+        // by making another API call to get product details (which include ratings)
+        // For simplicity in this example, we'll rely on a client-side `hasRated` flag.
         setOrderDetails(data);
-        console.log("FETCH: Order details loaded successfully:", data); // LOG 7
-        // Add log to check the first item's _id if data is loaded
+        console.log("FETCH: Order details loaded successfully:", data);
         if (data.cartItems && data.cartItems.length > 0) {
-            console.log("FETCH: First cart item in data (full object):", data.cartItems[0]); // NEW LOG 7a
-            console.log("FETCH: First cart item _id (extracted from data):", data.cartItems[0]._id); // NEW LOG 7b
+            console.log("FETCH: First cart item in data (full object):", data.cartItems[0]);
+            console.log("FETCH: First cart item _id (extracted from data):", data.cartItems[0]._id);
         } else {
-            console.warn("FETCH: No cart items found in order data or cartItems array is empty."); // NEW LOG for empty cart
+            console.warn("FETCH: No cart items found in order data or cartItems array is empty.");
         }
       } else {
         setError(`Failed to fetch order details for Order ID: ${orderId}. Please check the Order ID or try again later.`);
-        console.error(`Workspace: Failed from all attempted URLs. Last attempt: ${attemptedUrl}`); // LOG 8
+        console.error(`Workspace: Failed from all attempted URLs. Last attempt: ${attemptedUrl}`);
       }
       setLoading(false);
     };
@@ -146,16 +155,17 @@ const OrderDetailsPage = () => {
   }, [orderId]);
 
   const handleReturnClick = (cartItemId: string) => {
-    console.log("HANDLE_RETURN_CLICK: Button clicked for cartItemId:", cartItemId); // LOG 9
+    console.log("HANDLE_RETURN_CLICK: Button clicked for cartItemId:", cartItemId);
     setReturningProductId(cartItemId);
-    console.log("HANDLE_RETURN_CLICK: returningProductId state set to:", cartItemId); // LOG 10
+    console.log("HANDLE_RETURN_CLICK: returningProductId state set to:", cartItemId);
     setSelectedReason('');
     setReturnDetails('');
     setSubmissionStatus(prev => ({ ...prev, [cartItemId]: '' }));
+    setRatingProductId(null); // Close rating form if open
   };
 
   const handleCancelReturn = () => {
-    console.log("CANCEL_RETURN: Cancelling return request."); // LOG 11
+    console.log("CANCEL_RETURN: Cancelling return request.");
     if (returningProductId) {
         setSubmissionStatus(prev => ({ ...prev, [returningProductId]: '' }));
     }
@@ -167,15 +177,15 @@ const OrderDetailsPage = () => {
   const handleSubmitReturn = async () => {
     const currentCartItemId = returningProductId;
 
-    console.log("HANDLE_SUBMIT_RETURN: Function called. Checking data..."); // LOG 12
-    console.log("HANDLE_SUBMIT_RETURN: currentCartItemId:", currentCartItemId, "orderId:", orderId); // LOG 13
+    console.log("HANDLE_SUBMIT_RETURN: Function called. Checking data...");
+    console.log("HANDLE_SUBMIT_RETURN: currentCartItemId:", currentCartItemId, "orderId:", orderId);
 
     if (!currentCartItemId || !orderId) {
         setSubmissionStatus(prev => ({
             ...prev,
             [currentCartItemId || 'unknown']: "Submission error: Product or Order ID missing. Check console.",
         }));
-        console.error("ERROR: handleSubmitReturn - Missing currentCartItemId or orderId.", { currentCartItemId, orderId }); // LOG 14
+        console.error("ERROR: handleSubmitReturn - Missing currentCartItemId or orderId.", { currentCartItemId, orderId });
         return;
     }
 
@@ -184,7 +194,7 @@ const OrderDetailsPage = () => {
             ...prev,
             [currentCartItemId]: "Please select a return reason.",
         }));
-        console.warn("WARNING: handleSubmitReturn - No return reason selected."); // LOG 15
+        console.warn("WARNING: handleSubmitReturn - No return reason selected.");
         return;
     }
 
@@ -199,7 +209,7 @@ const OrderDetailsPage = () => {
         ...prev,
         [currentCartItemId]: "Authentication error. Please log in again.",
       }));
-      console.error("ERROR: handleSubmitReturn - Authentication token not found."); // LOG 16
+      console.error("ERROR: handleSubmitReturn - Authentication token not found.");
       return;
     }
 
@@ -208,7 +218,7 @@ const OrderDetailsPage = () => {
         cartItemId: currentCartItemId,
         reason: selectedReason,
         details: returnDetails
-    }); // LOG 17
+    });
 
     try {
       const response = await fetch(
@@ -234,7 +244,7 @@ const OrderDetailsPage = () => {
           ...prev,
           [currentCartItemId]: "Return requested successfully!",
         }));
-        console.log("API_SUCCESS: Return request successful. Updated order:", responseData.order); // LOG 18
+        console.log("API_SUCCESS: Return request successful. Updated order:", responseData.order);
         setTimeout(() => {
             setReturningProductId(null);
             setSelectedReason('');
@@ -247,16 +257,128 @@ const OrderDetailsPage = () => {
           ...prev,
           [currentCartItemId]: errorMessage,
         }));
-        console.error("API_ERROR: Return submission failed.", response.status, responseData); // LOG 19
+        console.error("API_ERROR: Return submission failed.", response.status, responseData);
       }
     } catch (err) {
-      console.error("NETWORK_ERROR: Return submission network error:", err); // LOG 20
+      console.error("NETWORK_ERROR: Return submission network error:", err);
       setSubmissionStatus(prev => ({
           ...prev,
           [currentCartItemId]: "A network error occurred. Please check your internet connection.",
       }));
     }
   };
+
+  // --- NEW RATING FUNCTIONS ---
+  const handleRateClick = (cartItemId: string) => {
+    setRatingProductId(cartItemId);
+    setCurrentRating(0); // Reset rating
+    setRatingComment(''); // Reset comment
+    setRatingSubmissionStatus(prev => ({ ...prev, [cartItemId]: '' }));
+    setReturningProductId(null); // Close return form if open
+  };
+
+  const handleCancelRating = () => {
+    if (ratingProductId) {
+        setRatingSubmissionStatus(prev => ({ ...prev, [ratingProductId]: '' }));
+    }
+    setRatingProductId(null);
+    setCurrentRating(0);
+    setRatingComment('');
+  };
+
+  const handleSubmitRating = async (cartItem: CartItem) => {
+    const currentCartItemId = ratingProductId;
+    const productId = cartItem.productId; // Get the actual product ID from the cart item
+
+    if (!currentCartItemId || !productId || !orderId) { // Ensure all necessary IDs are present
+        setRatingSubmissionStatus(prev => ({
+            ...prev,
+            [currentCartItemId || 'unknown']: "Submission error: Product or Order ID missing. Check console.",
+        }));
+        console.error("ERROR: handleSubmitRating - Missing IDs.", { currentCartItemId, productId, orderId });
+        return;
+    }
+
+    if (currentRating === 0) {
+        setRatingSubmissionStatus(prev => ({
+            ...prev,
+            [currentCartItemId]: "Please select a star rating.",
+        }));
+        return;
+    }
+
+    setRatingSubmissionStatus(prev => ({
+      ...prev,
+      [currentCartItemId]: "Submitting rating...",
+    }));
+
+    const token = localStorage.getItem("yourAuthTokenKey");
+    if (!token) {
+      setRatingSubmissionStatus(prev => ({
+        ...prev,
+        [currentCartItemId]: "Authentication error. Please log in again.",
+      }));
+      console.error("ERROR: handleSubmitRating - Authentication token not found.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://estore-backend-dyl3.onrender.com/api/products/${productId}/review`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            rating: currentRating,
+            comment: ratingComment, // Send the comment to the backend
+          }),
+        }
+      );
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        setRatingSubmissionStatus(prev => ({
+          ...prev,
+          [currentCartItemId]: "Rating submitted successfully!",
+        }));
+
+        // OPTIONAL: Update the specific cart item's hasRated status in local state
+        // This won't persist if the page is refreshed unless stored in backend
+        setOrderDetails(prevDetails => {
+            if (!prevDetails) return null;
+            const updatedCartItems = prevDetails.cartItems.map(item =>
+                item._id === currentCartItemId ? { ...item, hasRated: true } : item
+            );
+            return { ...prevDetails, cartItems: updatedCartItems };
+        });
+
+        setTimeout(() => {
+            setRatingProductId(null);
+            setCurrentRating(0);
+            setRatingComment('');
+            setRatingSubmissionStatus(prev => ({ ...prev, [currentCartItemId]: '' }));
+        }, 1500);
+      } else {
+        const errorMessage = responseData.error || responseData.message || "Failed to submit rating. Please try again.";
+        setRatingSubmissionStatus(prev => ({
+          ...prev,
+          [currentCartItemId]: errorMessage,
+        }));
+        console.error("API_ERROR: Rating submission failed.", response.status, responseData);
+      }
+    } catch (err) {
+      console.error("NETWORK_ERROR: Rating submission network error:", err);
+      setRatingSubmissionStatus(prev => ({
+          ...prev,
+          [currentCartItemId]: "A network error occurred. Please check your internet connection.",
+      }));
+    }
+  };
+
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', fontSize: '1.125rem', fontWeight: '600' }}>Loading order details...</div>;
@@ -270,6 +392,9 @@ const OrderDetailsPage = () => {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', fontSize: '1.125rem', fontWeight: '600' }}>No order details found.</div>;
   }
 
+  // Determine if the order is delivered for enabling ratings
+  const isOrderDelivered = orderDetails.orderStatus === 'Delivered';
+
   return (
     <div style={{ maxWidth: '960px', margin: '0 auto', padding: '1rem' }}>
       <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '2rem', color: '#374151' }}>Order Details</h1>
@@ -281,8 +406,8 @@ const OrderDetailsPage = () => {
           <p>
             <strong>Status:</strong>
             <span style={{ marginLeft: '0.5rem', padding: '0.25rem 0.75rem', fontSize: '0.875rem', fontWeight: '600', borderRadius: '9999px',
-              backgroundColor: orderDetails.orderStatus === 'delivered' ? '#dcfce7' : orderDetails.orderStatus === 'processing' ? '#fef9c3' : '#e5e7eb',
-              color: orderDetails.orderStatus === 'delivered' ? '#166534' : orderDetails.orderStatus === 'processing' ? '#a16207' : '#4b5563'
+              backgroundColor: orderDetails.orderStatus === 'Delivered' ? '#dcfce7' : orderDetails.orderStatus === 'Processing' ? '#fef9c3' : '#e5e7eb',
+              color: orderDetails.orderStatus === 'Delivered' ? '#166534' : orderDetails.orderStatus === 'Processing' ? '#a16207' : '#4b5563'
             }}>
               {orderDetails.orderStatus}
             </span>
@@ -295,7 +420,11 @@ const OrderDetailsPage = () => {
       <ul style={{ listStyle: 'none', padding: '0', margin: '0', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {orderDetails.cartItems.map((item) => {
           const itemReturnStatus = item.returnStatus;
-          const currentSubmissionStatus = submissionStatus[item._id] || '';
+          const currentReturnSubmissionStatus = submissionStatus[item._id] || '';
+          const currentRatingSubmissionStatus = ratingSubmissionStatus[item._id] || '';
+          // Only allow rating if the order is delivered, the item has a productId,
+          // and the item hasn't been marked as 'hasRated' (client-side check for this session)
+          const canRate = isOrderDelivered && item.productId && !item.hasRated;
 
           return (
             <li key={item._id} style={{ padding: '1.5rem', backgroundColor: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '0.5rem' }}>
@@ -311,7 +440,8 @@ const OrderDetailsPage = () => {
                   <p>Price: ${item.price.toFixed(2)}</p>
                   <p style={{ fontWeight: '600', marginTop: '0.5rem' }}>Subtotal: ${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
-                <div style={{ marginTop: '1rem', width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ marginTop: '1rem', width: '100%', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  {/* Return Button/Status */}
                   {itemReturnStatus && itemReturnStatus !== "NotReturned" ? (
                     <span style={{
                         fontSize: '0.875rem', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', textAlign: 'center',
@@ -321,36 +451,52 @@ const OrderDetailsPage = () => {
                         Status: {itemReturnStatus}
                         {item.returnReason && ` (${item.returnReason})`}
                     </span>
-                  ) : returningProductId === item._id && currentSubmissionStatus && !currentSubmissionStatus.toLowerCase().includes("success") && !currentSubmissionStatus.toLowerCase().includes("requested") && currentSubmissionStatus !== "" ? (
-                    <span style={{ fontSize: '0.875rem', fontWeight: '500', color: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#dc2626' : '#ca8a04' }}>
-                        {currentSubmissionStatus}
+                  ) : returningProductId === item._id && currentReturnSubmissionStatus && !currentReturnSubmissionStatus.toLowerCase().includes("success") && !currentReturnSubmissionStatus.toLowerCase().includes("requested") && currentReturnSubmissionStatus !== "" ? (
+                    <span style={{ fontSize: '0.875rem', fontWeight: '500', color: currentReturnSubmissionStatus.includes("Failed") || currentReturnSubmissionStatus.includes("error") || currentReturnSubmissionStatus.includes("Authentication error") ? '#dc2626' : '#ca8a04' }}>
+                        {currentReturnSubmissionStatus}
                     </span>
                   ) : (
                     <button
                       onClick={() => handleReturnClick(item._id)}
-                      disabled={false} // <--- THIS IS THE CRUCIAL CHANGE FOR TESTING
-                      style={{ backgroundColor: '#4f46e5', color: '#fff', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: !!returningProductId ? 0.6 : 1 }}
+                      disabled={!!returningProductId || !!ratingProductId} // Disable if another form is open
+                      style={{ backgroundColor: '#4f46e5', color: '#fff', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!!returningProductId || !!ratingProductId) ? 0.6 : 1 }}
                     >
                       Return This Product
                     </button>
                   )}
+
+                  {/* Rating Button/Status */}
+                  {canRate && ratingProductId !== item._id ? (
+                     <button
+                       onClick={() => handleRateClick(item._id)}
+                       disabled={!!returningProductId || !!ratingProductId} // Disable if another form is open
+                       style={{ backgroundColor: '#059669', color: '#fff', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!!returningProductId || !!ratingProductId) ? 0.6 : 1 }}
+                     >
+                       Rate This Product
+                     </button>
+                   ) : item.hasRated && isOrderDelivered ? ( // Show if already rated (frontend flag)
+                       <span style={{ fontSize: '0.875rem', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.375rem', textAlign: 'center', backgroundColor: '#d1fae5', color: '#065f46' }}>
+                           You have rated this product.
+                       </span>
+                   ) : null}
                 </div>
               </div>
 
+              {/* Return Form */}
               {returningProductId === item._id && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
                   <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Return Reason for: <span style={{ fontWeight: 'bold' }}>{item.name}</span></h4>
-                  {currentSubmissionStatus && (
+                  {currentReturnSubmissionStatus && (
                       <p style={{
-                          color: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#991b1b' : (currentSubmissionStatus.includes("Success") ? '#166534' : '#92400e'),
+                          color: currentReturnSubmissionStatus.includes("Failed") || currentReturnSubmissionStatus.includes("error") || currentReturnSubmissionStatus.includes("Authentication error") ? '#991b1b' : (currentReturnSubmissionStatus.includes("Success") ? '#166534' : '#92400e'),
                           fontSize: '0.875rem',
                           marginBottom: '1rem',
                           padding: '0.75rem',
-                          backgroundColor: currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fee2e2' : (currentSubmissionStatus.includes("Success") ? '#dcfce7' : '#fef3c7'),
+                          backgroundColor: currentReturnSubmissionStatus.includes("Failed") || currentReturnSubmissionStatus.includes("error") || currentReturnSubmissionStatus.includes("Authentication error") ? '#fee2e2' : (currentReturnSubmissionStatus.includes("Success") ? '#dcfce7' : '#fef3c7'),
                           borderRadius: '0.375rem',
-                          border: `1px solid ${currentSubmissionStatus.includes("Failed") || currentSubmissionStatus.includes("error") || currentSubmissionStatus.includes("Authentication error") ? '#fca5a5' : (currentSubmissionStatus.includes("Success") ? '#86efac' : '#fde68a')}`
+                          border: `1px solid ${currentReturnSubmissionStatus.includes("Failed") || currentReturnSubmissionStatus.includes("error") || currentReturnSubmissionStatus.includes("Authentication error") ? '#fca5a5' : (currentReturnSubmissionStatus.includes("Success") ? '#86efac' : '#fde68a')}`
                       }}>
-                          {currentSubmissionStatus}
+                          {currentReturnSubmissionStatus}
                       </p>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -388,13 +534,72 @@ const OrderDetailsPage = () => {
                   <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <button
                       onClick={handleSubmitReturn}
-                      disabled={!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))}
-                      style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentSubmissionStatus && (currentSubmissionStatus.includes("Submitting") || currentSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
+                      disabled={!selectedReason || (currentReturnSubmissionStatus && (currentReturnSubmissionStatus.includes("Submitting") || currentReturnSubmissionStatus.includes("success")))}
+                      style={{ width: '100%', backgroundColor: '#16a34a', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (!selectedReason || (currentReturnSubmissionStatus && (currentReturnSubmissionStatus.includes("Submitting") || currentReturnSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
                     >
-                      {currentSubmissionStatus && currentSubmissionStatus.includes("Submitting") ? 'Submitting...' : 'Submit Return Request'}
+                      {currentReturnSubmissionStatus && currentReturnSubmissionStatus.includes("Submitting") ? 'Submitting...' : 'Submit Return Request'}
                     </button>
                     <button
                       onClick={handleCancelReturn}
+                      style={{ width: '100%', backgroundColor: '#e5e7eb', color: '#4b5563', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* NEW RATING FORM */}
+              {ratingProductId === item._id && (
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+                  <h4 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Rate <span style={{ fontWeight: 'bold' }}>{item.name}</span></h4>
+                  {currentRatingSubmissionStatus && (
+                      <p style={{
+                          color: currentRatingSubmissionStatus.includes("Failed") || currentRatingSubmissionStatus.includes("error") || currentRatingSubmissionStatus.includes("Authentication error") ? '#991b1b' : (currentRatingSubmissionStatus.includes("Success") ? '#166534' : '#92400e'),
+                          fontSize: '0.875rem',
+                          marginBottom: '1rem',
+                          padding: '0.75rem',
+                          backgroundColor: currentRatingSubmissionStatus.includes("Failed") || currentRatingSubmissionStatus.includes("error") || currentRatingSubmissionStatus.includes("Authentication error") ? '#fee2e2' : (currentRatingSubmissionStatus.includes("Success") ? '#dcfce7' : '#fef3c7'),
+                          borderRadius: '0.375rem',
+                          border: `1px solid ${currentRatingSubmissionStatus.includes("Failed") || currentRatingSubmissionStatus.includes("error") || currentRatingSubmissionStatus.includes("Authentication error") ? '#fca5a5' : (currentRatingSubmissionStatus.includes("Success") ? '#86efac' : '#fde68a')}`
+                      }}>
+                          {currentRatingSubmissionStatus}
+                      </p>
+                  )}
+                  <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.25rem' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        onClick={() => setCurrentRating(star)}
+                        style={{
+                          cursor: 'pointer',
+                          fontSize: '1.5rem',
+                          color: star <= currentRating ? '#fcd34d' : '#d1d5db', // Yellow for selected, grey for unselected
+                          transition: 'color 0.2s ease-in-out',
+                        }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  {/* TEXTAREA FOR REVIEW COMMENT */}
+                  <textarea
+                    placeholder="Write a review (optional)"
+                    value={ratingComment}
+                    onChange={(e) => setRatingComment(e.target.value)}
+                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem' }}
+                    rows={4}
+                  ></textarea>
+                  <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button
+                      onClick={() => handleSubmitRating(item)}
+                      disabled={currentRating === 0 || (currentRatingSubmissionStatus && (currentRatingSubmissionStatus.includes("Submitting") || currentRatingSubmissionStatus.includes("success")))}
+                      style={{ width: '100%', backgroundColor: '#10b981', color: '#fff', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', opacity: (currentRating === 0 || (currentRatingSubmissionStatus && (currentRatingSubmissionStatus.includes("Submitting") || currentRatingSubmissionStatus.includes("success")))) ? 0.6 : 1 }}
+                    >
+                      {currentRatingSubmissionStatus && currentRatingSubmissionStatus.includes("Submitting") ? 'Submitting...' : 'Submit Rating'}
+                    </button>
+                    <button
+                      onClick={handleCancelRating}
                       style={{ width: '100%', backgroundColor: '#e5e7eb', color: '#4b5563', fontWeight: '600', padding: '0.5rem 1.25rem', borderRadius: '0.375rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
                     >
                       Cancel
