@@ -1,7 +1,7 @@
 // src/components/Shop/SingleGridItem.tsx
 "use client";
 import React from "react";
-import { Product } from "@/types/product"; // Ensure this path is correct
+import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { updateQuickView } from "@/redux/features/quickView-slice";
 import { addItemToCart } from "@/redux/features/cart-slice";
@@ -9,7 +9,10 @@ import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "next/image"; // Keep this for the product image
+
+// NEW: Import Font Awesome star icons
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const SingleGridItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
@@ -45,7 +48,6 @@ const SingleGridItem = ({ item }: { item: Product }) => {
   };
 
   // Calculate the number of filled stars based on averageRating
-  // Explicitly cast to Number to resolve TypeScript error
   const filledStars = Math.round(Number(item.averageRating) || 0);
 
   return (
@@ -85,7 +87,7 @@ const SingleGridItem = ({ item }: { item: Product }) => {
               <path
                 fillRule="evenodd"
                 clipRule="evenodd"
-                d="M8.00016 2.16666C4.99074 2.16666 2.96369 3.96946 1.78721 5.49791L1.76599 5.52546C1.49992 5.87102 1.25487 6.18928 1.08862 6.5656C0.910592 6.96858 0.833496 7.40779 0.833496 8C0.833496 8.59220 0.910592 9.03142 1.08862 9.4344C1.25487 9.81072 1.49992 10.1290 1.76599 10.4745L1.78721 10.5021C2.96369 12.0305 4.99074 13.8333 8.00016 13.8333C11.0096 13.8333 13.0366 12.0305 14.2131 10.5021L14.2343 10.4745C14.5004 10.1290 14.7455 9.81072 14.9117 9.4344C15.0897 9.03142 15.1668 8.59220 15.1668 8C15.1668 7.40779 15.0897 6.96858 14.9117 6.5656C14.7455 6.18927 14.5004 5.87101 14.2343 5.52545L14.2131 5.49791C13.0366 3.96946 11.0096 2.16666 8.00016 2.16666ZM2.57964 6.10786C3.66592 4.69661 5.43374 3.16666 8.00016 3.16666C10.5666 3.16666 12.3344 4.69661 13.4207 6.10786C13.7131 6.48772 13.8843 6.71470 13.9970 6.96970C14.1023 7.20801 14.1668 7.49929 14.1668 8C14.1668 8.50071 14.1023 8.79199 13.9970 9.03030C13.8843 9.28529 13.7131 9.51227 13.4207 9.89213C12.3344 11.3034 10.5666 12.8333 8.00016 12.8333C5.43374 12.8333 3.66592 11.3034 2.57964 9.89213C2.28725 9.51227 2.11599 9.28529 2.00334 9.03030C1.89805 8.79199 1.83350 8.50071 1.83350 8C1.83350 7.49929 1.89805 7.20801 2.00334 6.96970C2.11599 6.71470 2.28725 6.48772 2.57964 6.10786Z"
+                d="M8.00016 2.16666C4.99074 2.16666 2.96369 3.96946 1.78721 5.49791L1.76599 5.52546C1.49992 5.87102 1.25487 6.18928 1.08862 6.5656C0.910592 6.96858 0.833496 7.40779 0.833496 8C0.833496 8.59220 0.910592 9.03142 1.08862 9.4344C1.25487 9.81072 1.49992 10.1290 1.76599 10.4745L1.78721 10.5021C2.96369 12.0305 4.99074 13.8333 8.00016 13.8333C11.0096 13.8333 13.0366 12.0305 14.2131 10.5021L14.2343 10.4745C14.5004 10.1290 14.7455 9.81072 14.9117 9.4344C15.0897 9.03142 15.1668 8.59220 15.1668 8C15.1668 7.40779 15.0897 6.96858 14.9117 6.5656C14.7455 6.18927 14.5004 5.87101 14.2343 5.52545L14.2131 5.49791C13.0366 3.96946 11.0096 2.16666 8.00016 2.16666Z"
                 fill=""
               />
             </svg>
@@ -123,16 +125,18 @@ const SingleGridItem = ({ item }: { item: Product }) => {
         </div>
       </div>
 
+      {/* Main content area for the grid item, including the stars for display */}
       <div className="flex items-center gap-2.5 mb-2">
         <div className="flex items-center gap-1">
+          {/* REPLACE THIS SECTION WITH REACT ICONS */}
           {[...Array(5)].map((_, i) => (
-            <Image
-              key={i}
-              src={i < filledStars ? "/images/icons/icon-star.svg" : "/images/icons/icon-star-outline.svg"}
-              alt="star icon"
-              width={15}
-              height={15}
-            />
+            <span key={i}> {/* Use a span to apply color via Tailwind */}
+              {i < filledStars ? (
+                <FaStar className="text-yellow-500" size={15} /> // Filled star, set color
+              ) : (
+                <FaRegStar className="text-gray-400" size={15} /> // Empty star, set color
+              )}
+            </span>
           ))}
         </div>
 
