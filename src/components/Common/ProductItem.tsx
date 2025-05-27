@@ -6,13 +6,13 @@ import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
-import { updateproductDetails } from "@/redux/features/product-details";
+import { updateproductDetails } from "@/redux/features/product-details"; // Adjusted import based on your code (product-details vs productDetails-slice)
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-// NEW: Import Font Awesome star icons from react-icons
+// Import Font Awesome star icons from react-icons
 import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const ProductItem = ({ item }: { item: Product }) => {

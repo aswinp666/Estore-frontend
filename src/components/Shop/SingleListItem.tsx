@@ -12,8 +12,10 @@ import { AppDispatch } from "@/redux/store";
 import Link from "next/link";
 import Image from "next/image"; // Keep this for the product image
 
-// NEW: Import Font Awesome star icons
+// Import Font Awesome star icons
 import { FaStar, FaRegStar } from 'react-icons/fa';
+// ADD THIS IMPORT for ProductDetailsSlice
+import { updateproductDetails } from "@/redux/features/product-details"; // Adjusted import based on your code (product-details vs productDetails-slice)
 
 const SingleListItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
@@ -131,8 +133,8 @@ const SingleListItem = ({ item }: { item: Product }) => {
         <div className="w-full flex flex-col gap-5 sm:flex-row sm:items-center justify-center sm:justify-between py-5 px-4 sm:px-7.5 lg:pl-11 lg:pr-12">
           <div>
             <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
-              {/* Ensure onClick is correctly set for Link */}
-              <Link href="/shop-details" onClick={() => dispatch(updateQuickView({ ...item }))}>
+              {/* IMPORTANT: Dispatch updateproductDetails here */}
+              <Link href="/shop-details" onClick={() => dispatch(updateproductDetails({ ...item }))}>
                 {item.name}
               </Link>
             </h3>
