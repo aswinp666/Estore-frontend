@@ -10,7 +10,10 @@ import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "next/image"; // Keep this for the product image
+
+// NEW: Import Font Awesome star icons
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const SingleListItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
@@ -87,7 +90,7 @@ const SingleListItem = ({ item }: { item: Product }) => {
                 <path
                   fillRule="evenodd"
                   clipRule="evenodd"
-                  d="M8.00016 2.16666C4.99074 2.16666 2.96369 3.96946 1.78721 5.49791L1.76599 5.52546C1.49992 5.87102 1.25487 6.18928 1.08862 6.5656C0.910592 6.96858 0.833496 7.40779 0.833496 8C0.833496 8.59220 0.910592 9.03142 1.08862 9.4344C1.25487 9.81072 1.49992 10.1290 1.76599 10.4745L1.78721 10.5021C2.96369 12.0305 4.99074 13.8333 8.00016 13.8333C11.0096 13.8333 13.0366 12.0305 14.2131 10.5021L14.2343 10.4745C14.5004 10.1290 14.7455 9.81072 14.9117 9.4344C15.0897 9.03142 15.1668 8.59220 15.1668 8C15.1668 7.40779 15.0897 6.96858 14.9117 6.5656C14.7455 6.18927 14.5004 5.87101 14.2343 5.52545L14.2131 5.49791C13.0366 3.96946 11.0096 2.16666 8.00016 2.16666ZM2.57964 6.10786C3.66592 4.69661 5.43374 3.16666 8.00016 3.16666C10.5666 3.16666 12.3344 4.69661 13.4207 6.10786C13.7131 6.48772 13.8843 6.71470 13.9970 6.96970C14.1023 7.20801 14.1668 7.49929 14.1668 8C14.1668 8.50071 14.1023 8.79199 13.9970 9.03030C13.8843 9.28529 13.7131 9.51227 13.4207 9.89213C12.3344 11.3034 10.5666 12.8333 8.00016 12.8333C5.43374 12.8333 3.66592 11.3034 2.57964 9.89213C2.28725 9.51227 2.11599 9.28529 2.00334 9.03030C1.89805 8.79199 1.83350 8.50071 1.83350 8C1.83350 7.49929 1.89805 7.20801 2.00334 6.96970C2.11599 6.71470 2.28725 6.48772 2.57964 6.10786Z"
+                  d="M8.00016 2.16666C4.99074 2.16666 2.96369 3.96946 1.78721 5.49791L1.76599 5.52546C1.49992 5.87102 1.25487 6.18928 1.08862 6.5656C0.910592 6.96858 0.833496 7.40779 0.833496 8C0.833496 8.59220 0.910592 9.03142 1.08862 9.4344C1.25487 9.81072 1.49992 10.1290 1.76599 10.4745L1.78721 10.5021C2.96369 12.0305 4.99074 13.8333 8.00016 13.8333C11.0096 13.8333 13.0366 12.0305 14.2131 10.5021L14.2343 10.4745C14.5004 10.1290 14.7455 9.81072 14.9117 9.4344C15.0897 9.03142 15.1668 8.59220 15.1668 8C15.1668 7.40779 15.0897 6.96858 14.9117 6.5656C14.7455 6.18927 14.5004 5.87101 14.2343 5.52545L14.2131 5.49791C13.0366 3.96946 11.0096 2.16666 8.00016 2.16666Z"
                   fill=""
                 />
               </svg>
@@ -128,7 +131,10 @@ const SingleListItem = ({ item }: { item: Product }) => {
         <div className="w-full flex flex-col gap-5 sm:flex-row sm:items-center justify-center sm:justify-between py-5 px-4 sm:px-7.5 lg:pl-11 lg:pr-12">
           <div>
             <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
-              <Link href="/shop-details"> {item.name} </Link>
+              {/* Ensure onClick is correctly set for Link */}
+              <Link href="/shop-details" onClick={() => dispatch(updateQuickView({ ...item }))}>
+                {item.name}
+              </Link>
             </h3>
 
             {/* Price display - ensure it's handled for discountedPrice */}
@@ -147,25 +153,26 @@ const SingleListItem = ({ item }: { item: Product }) => {
           {/* This is the rating/review display block within the main content area */}
           <div className="flex items-center gap-2.5"> {/* Removed 'mb-2' to align with previous styles */}
             <div className="flex items-center gap-1">
+              {/* Using React Icons for stars */}
               {[...Array(5)].map((_, i) => (
-                <Image
-                  key={i}
-                  src={i < filledStars ? "/images/icons/icon-star.svg" : "/images/icons/icon-star-outline.svg"}
-                  alt="star icon"
-                  width={15}
-                  height={15}
-                />
+                <span key={i}>
+                  {i < filledStars ? (
+                    <FaStar className="text-yellow-500" size={15} />
+                  ) : (
+                    <FaRegStar className="text-gray-400" size={15} />
+                  )}
+                </span>
               ))}
             </div>
 
             {/* Display average rating and total number of reviews */}
             <p className="text-custom-sm">
-  {item.averageRating !== undefined && item.averageRating !== null
-    ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
-        ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}` // MODIFIED PART
-        : ''})`
-    : '(No reviews)'}
-</p>
+              {item.averageRating !== undefined && item.averageRating !== null
+                ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
+                    ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}`
+                    : ''})`
+                : '(No reviews)'}
+            </p>
           </div>
         </div>
       </div>

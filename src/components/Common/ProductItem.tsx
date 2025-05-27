@@ -1,7 +1,6 @@
 // src/app/(site)/components/ProductItem.tsx
 "use client";
 import React, { useEffect, useState } from "react";
-// REMOVE: import Image from "next/image"; // You'll still need Image for the product photo, but not for stars
 import Image from "next/image"; // Keep this line for the product image itself
 import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
@@ -150,7 +149,7 @@ const ProductItem = ({ item }: { item: Product }) => {
 
       <div className="flex items-center gap-2.5 mb-2">
         <div className="flex items-center gap-1">
-          {/* REPLACE THIS SECTION WITH REACT ICONS */}
+          {/* Using React Icons for stars */}
           {[...Array(5)].map((_, i) => (
             <span key={i}> {/* Use a span to apply color via Tailwind */}
               {i < filledStars ? (
@@ -162,13 +161,13 @@ const ProductItem = ({ item }: { item: Product }) => {
           ))}
         </div>
         {/* Display average rating and total number of reviews */}
- <p className="text-custom-sm">
-  {item.averageRating !== undefined && item.averageRating !== null
-    ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
-        ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}` // MODIFIED PART
-        : ''})`
-    : '(No reviews)'}
-</p>
+        <p className="text-custom-sm">
+          {item.averageRating !== undefined && item.averageRating !== null
+            ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
+                ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}`
+                : ''})`
+            : '(No reviews)'}
+        </p>
       </div>
 
       <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
