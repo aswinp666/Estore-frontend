@@ -141,11 +141,13 @@ const SingleGridItem = ({ item }: { item: Product }) => {
         </div>
 
         {/* Display average rating and total number of reviews */}
-        <p className="text-custom-sm">
-          {item.averageRating !== undefined && item.averageRating !== null
-            ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined ? ` / ${item.numOfReviews}` : ''})`
-            : '(No reviews)'}
-        </p>
+      <p className="text-custom-sm">
+  {item.averageRating !== undefined && item.averageRating !== null
+    ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
+        ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}` // MODIFIED PART
+        : ''})`
+    : '(No reviews)'}
+</p>
       </div>
 
       <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">

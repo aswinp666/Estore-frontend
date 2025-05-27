@@ -160,10 +160,12 @@ const SingleListItem = ({ item }: { item: Product }) => {
 
             {/* Display average rating and total number of reviews */}
             <p className="text-custom-sm">
-              {item.averageRating !== undefined && item.averageRating !== null
-                ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined ? ` / ${item.numOfReviews}` : ''})`
-                : '(No reviews)'}
-            </p>
+  {item.averageRating !== undefined && item.averageRating !== null
+    ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
+        ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}` // MODIFIED PART
+        : ''})`
+    : '(No reviews)'}
+</p>
           </div>
         </div>
       </div>
