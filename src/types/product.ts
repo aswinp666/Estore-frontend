@@ -4,6 +4,7 @@ export type Product = {
   // Remove 'reviews: number;'
   price: number;
   discountedPrice?: number; // Make it optional if it's not always present
+  description?: string; // Optional description field
   category: string;
   imageUrl: string;
   options?: {
