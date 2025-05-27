@@ -13,10 +13,11 @@ import Image from "next/image"; // Keep this for the product image
 
 // NEW: Import Font Awesome star icons
 import { FaStar, FaRegStar } from 'react-icons/fa';
+// ADDED/CORRECTED IMPORT: Make sure this path is correct for your product-details slice
+import { updateproductDetails } from "@/redux/features/product-details"; // Assuming product-details.ts or productDetails-slice.ts
 
 const SingleGridItem = ({ item }: { item: Product }) => {
   const { openModal } = useModalContext();
-
   const dispatch = useDispatch<AppDispatch>();
 
   // update the QuickView state
@@ -151,7 +152,10 @@ const SingleGridItem = ({ item }: { item: Product }) => {
       </div>
 
       <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
-        <Link href="/shop-details"> {item.name} </Link>
+        {/* THIS IS THE LINE TO CHANGE */}
+        <Link href="/shop-details" onClick={() => dispatch(updateproductDetails({ ...item }))}>
+          {item.name}
+        </Link>
       </h3>
 
       <span className="flex items-center gap-2 font-medium text-lg">
