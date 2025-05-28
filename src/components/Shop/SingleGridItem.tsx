@@ -9,7 +9,7 @@ import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import Link from "next/link";
-import Image from "next/image"; // Keep this for the product image
+import Image from "next/image";
 
 // NEW: Import Font Awesome star icons
 import { FaStar, FaRegStar } from 'react-icons/fa';
@@ -118,7 +118,13 @@ const SingleGridItem = ({ item }: { item: Product }) => {
               <path
                 fillRule="evenodd"
                 clipRule="evenodd"
-                d="M3.74949 2.94946C2.64350 3.45502 1.83325 4.65749 1.83325 6.0914C1.83325 7.55633 2.43273 8.68549 3.29211 9.65318C4.00040 10.4507 4.85781 11.1118 5.69400 11.7564C5.89261 11.9095 6.09002 12.0617 6.28395 12.2146C6.63464 12.4910 6.94747 12.7337 7.24899 12.9099C7.55068 13.0862 7.79352 13.1667 7.99992 13.1667C8.20632 13.1667 8.44916 13.0862 8.75085 12.9099C9.05237 12.7337 9.36520 12.4910 9.71589 12.2146C9.90982 12.0617 10.1072 11.9095 10.3058 11.7564C11.1420 11.1118 11.9994 10.4507 12.7077 9.65318C13.5671 8.68549 14.1666 7.55633 14.1666 6.0914C14.1666 4.65749 13.3563 3.45502 12.2503 2.94946C11.1759 2.45832 9.73214 2.58839 8.36016 4.01382C8.26590 4.11175 8.13584 4.16709 7.99992 4.16709C7.86400 4.16709 7.73393 4.11175 7.63967 4.01382C6.26769 2.58839 4.82396 2.45832 3.74949 2.94946ZM7.99992 2.97255C6.45855 1.59350 4.73256 1.40058 3.33376 2.03998C1.85639 2.71528 0.833252 4.28336 0.833252 6.09140C0.833252 7.86842 1.57358 9.22404 2.54440 10.3172C3.32183 11.1926 4.27340 11.9253 5.11380 12.5724C5.30431 12.7191 5.48911 12.8614 5.66486 12.9999C6.00636 13.2691 6.37295 13.5562 6.74447 13.7733C7.11582 13.9903 7.53965 14.1667 7.99992 14.1667C8.46018 14.1667 8.88401 13.9903 9.25537 13.7733C9.62689 13.5562 9.99348 13.2691 10.3350 12.9999C10.5107 12.8614 10.6955 12.7191 10.8860 12.5724C11.7264 11.9253 12.6780 11.1926 13.4554 10.3172C14.4263 9.22404 15.1666 7.86842 15.1666 6.09140C15.1666 4.28336 14.1434 2.71528 12.6661 2.03998C11.2673 1.40058 9.54129 1.59350 7.99992 2.97255Z"
+                d="M3.74949 2.94946C2.64350 3.45502 1.83325 4.65749 1.83325 6.09140C1.83325 7.55633 2.43273 8.68549 3.29211 9.65318C4.00040 10.4507 4.85781 11.1118 5.69400 11.7564C5.89261 11.9095 6.09002 12.0617 6.28395 12.2146C6.63464 12.4910 6.94747 12.7337 7.24899 12.9099C7.55068 13.0862 7.79352 13.1667 7.99992 13.1667C8.20632 13.1667 8.44916 13.0862 8.75085 12.9099C9.05237 12.7337 9.36520 12.4910 9.71589 12.2146C9.90982 12.0617 10.1072 11.9095 10.3058 11.7564C11.1420 11.1118 11.9994 10.4507 12.7077 9.65318C13.5671 8.68549 14.1666 7.55633 14.1666 6.09140C14.1666 4.65749 13.3563 3.45502 12.2503 2.94946C11.1759 2.45832 9.73214 2.58839 8.36016 4.01382C8.26590 4.11175 8.13584 4.16709 7.99992 4.16709C7.86400 4.16709 7.73393 4.11175 7.63967 4.01382C6.26769 2.58839 4.82396 2.45832 3.74949 2.94946Z"
+                fill=""
+              />
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M7.99992 2.97255C6.45855 1.59350 4.73256 1.40058 3.33376 2.03998C1.85639 2.71528 0.833252 4.28336 0.833252 6.09140C0.833252 7.86842 1.57358 9.22404 2.54440 10.3172C3.32183 11.1926 4.27340 11.9253 5.11380 12.5724C5.30431 12.7191 5.48911 12.8614 5.66486 12.9999C6.00636 13.2691 6.37295 13.5562 6.74447 13.7733C7.11582 13.9903 7.53965 14.1667 7.99992 14.1667C8.46018 14.1667 8.88401 13.9903 9.25537 13.7733C9.62689 13.5562 9.99348 13.2691 10.3350 12.9999C10.5107 12.8614 10.6955 12.7191 10.8860 12.5724C11.7264 11.9253 12.6780 11.1926 13.4554 10.3172C14.4263 9.22404 15.1666 7.86842 15.1666 6.09140C15.1666 4.28336 14.1434 2.71528 12.6661 2.03998C11.2673 1.40058 9.54129 1.59350 7.99992 2.97255Z"
                 fill=""
               />
             </svg>
@@ -129,30 +135,29 @@ const SingleGridItem = ({ item }: { item: Product }) => {
       {/* Main content area for the grid item, including the stars for display */}
       <div className="flex items-center gap-2.5 mb-2">
         <div className="flex items-center gap-1">
-          {/* REPLACE THIS SECTION WITH REACT ICONS */}
+          {/* Using React Icons for stars with inline styles */}
           {[...Array(5)].map((_, i) => (
-            <span key={i}> {/* Use a span to apply color via Tailwind */}
+            <span key={i}>
               {i < filledStars ? (
-                <FaStar className="text-yellow-500" size={15} /> // Filled star, set color
+                <FaStar style={{ color: '#FBBF24' }} size={15} /> 
               ) : (
-                <FaRegStar className="text-gray-400" size={15} /> // Empty star, set color
+                <FaRegStar style={{ color: '#9CA3AF' }} size={15} /> 
               )}
             </span>
           ))}
         </div>
 
         {/* Display average rating and total number of reviews */}
-      <p className="text-custom-sm">
-  {item.averageRating !== undefined && item.averageRating !== null
-    ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
-        ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}` // MODIFIED PART
-        : ''})`
-    : '(No reviews)'}
-</p>
+        <p className="text-custom-sm">
+          {item.averageRating !== undefined && item.averageRating !== null
+            ? `(${item.averageRating.toFixed(1)}${item.numOfReviews !== undefined
+                ? ` / ${item.numOfReviews} ${item.numOfReviews === 1 ? 'User Rating' : 'User Ratings'}`
+                : ''})`
+            : '(No reviews)'}
+        </p>
       </div>
 
       <h3 className="font-medium text-dark ease-out duration-200 hover:text-blue mb-1.5">
-        {/* THIS IS THE LINE TO CHANGE */}
         <Link href="/shop-details" onClick={() => dispatch(updateproductDetails({ ...item }))}>
           {item.name}
         </Link>

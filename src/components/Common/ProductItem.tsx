@@ -6,7 +6,7 @@ import { Product } from "@/types/product";
 import { useModalContext } from "@/app/context/QuickViewModalContext";
 import { addItemToCart } from "@/redux/features/cart-slice";
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
-import { updateproductDetails } from "@/redux/features/product-details"; // Adjusted import based on your code (product-details vs productDetails-slice)
+import { updateproductDetails } from "@/redux/features/product-details";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import Link from "next/link";
@@ -151,11 +151,11 @@ const ProductItem = ({ item }: { item: Product }) => {
         <div className="flex items-center gap-1">
           {/* Using React Icons for stars */}
           {[...Array(5)].map((_, i) => (
-            <span key={i}> {/* Use a span to apply color via Tailwind */}
+            <span key={i}>
               {i < filledStars ? (
-                <FaStar className="text-yellow-500" size={14} /> // Filled star, set color
+                <FaStar style={{ color: '#FBBF24' }} size={14} /> 
               ) : (
-                <FaRegStar className="text-gray-400" size={14} /> // Empty star, set color
+                <FaRegStar style={{ color: '#9CA3AF' }} size={14} /> 
               )}
             </span>
           ))}
