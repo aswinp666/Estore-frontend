@@ -147,22 +147,22 @@ const ShopDetails = () => {
               <div className="max-w-[539px] w-full">
                 <h2 className="font-semibold text-2xl text-dark mb-3">{product.name}</h2>
 
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i}>
-                      {i < filledStarsMain ? (
-                        <FaStar className="text-yellow-500" size={20} />
-                      ) : (
-                        <FaRegStar className="text-gray-400" size={20} />
-                      )}
-                    </span>
-                  ))}
-                  <span className="text-sm text-gray-600 ml-2">
-                    {product.averageRating !== undefined && product.averageRating !== null && product.numOfReviews !== undefined
-                      ? `(${product.averageRating.toFixed(1)} / ${product.numOfReviews} ${product.numOfReviews === 1 ? 'customer review' : 'customer reviews'})`
-                      : '(No reviews yet)'}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 mb-4">
+    {[...Array(5)].map((_, i) => (
+        <span key={i}>
+            {i < filledStarsMain ? (
+                <FaStar style={{ color: '#FBBF24' }} size={20} /> 
+            ) : (
+                <FaRegStar style={{ color: '#9CA3AF' }} size={20} /> 
+            )}
+        </span>
+    ))}
+    <span className="text-sm text-gray-600 ml-2">
+        {product.averageRating !== undefined && product.averageRating !== null && product.numOfReviews !== undefined
+            ? `(${product.averageRating.toFixed(1)} / ${product.numOfReviews} ${product.numOfReviews === 1 ? 'customer review' : 'customer reviews'})`
+            : '(No reviews yet)'}
+    </span>
+</div>
 
                 <div className="flex items-center gap-2 mb-4">
                   <MdCheckCircle className="text-green" size={20} />
