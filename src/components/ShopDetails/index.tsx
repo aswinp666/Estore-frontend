@@ -1,7 +1,7 @@
 // src/app/(site)/shop-details/index.tsx
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { FaHeart, FaMinus, FaPlus } from "react-icons/fa";
+import { FaHeart, FaMinus, FaPlus, FaUserCircle } from "react-icons/fa"; // Import FaUserCircle
 import { MdCheckCircle } from "react-icons/md";
 import Breadcrumb from "../Common/Breadcrumb";
 import Image from "next/image";
@@ -255,9 +255,9 @@ const ShopDetails = () => {
                 {reviews.map((review: Review) => (
                   <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
-                      {/* Profile Icon Placeholder */}
-                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-dark font-medium">
-                        {review.user?.name ? review.user.name.charAt(0).toUpperCase() : 'A'}
+                      {/* Profile Icon */}
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
+                        <FaUserCircle size={28} /> {/* FaUserCircle icon */}
                       </div>
                       <div>
                         <h4 className="font-semibold text-lg text-dark">
@@ -266,7 +266,7 @@ const ShopDetails = () => {
                         <div className="flex items-center gap-1">
                           {[...Array(5)].map((_, i) => (
                             <span key={i}>
-                              {i < review.rating ? (
+                              {i < review.rating ? ( // This logic correctly applies yellow if i is less than the rating
                                 <FaStar className="text-yellow-500" size={16} />
                               ) : (
                                 <FaRegStar className="text-gray-400" size={16} />
