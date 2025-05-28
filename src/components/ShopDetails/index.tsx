@@ -1,7 +1,7 @@
 // src/app/(site)/shop-details/index.tsx
 "use client";
 import React, { useEffect, useState, useMemo } from "react";
-import { FaHeart, FaMinus, FaPlus, FaUserCircle } from "react-icons/fa"; // Import FaUserCircle
+import { FaHeart, FaMinus, FaPlus, FaUserCircle } from "react-icons/fa";
 import { MdCheckCircle } from "react-icons/md";
 import Breadcrumb from "../Common/Breadcrumb";
 import Image from "next/image";
@@ -48,7 +48,7 @@ const ShopDetails = () => {
         console.error("Error parsing productDetails from localStorage", e);
       }
     }
-    
+
     return null; // Return null if no valid product found from either source
   }, [productFromRedux]); // Only re-memoize if productFromRedux changes
 
@@ -98,6 +98,7 @@ const ShopDetails = () => {
     }
   }, [product?._id]);
 
+  // This variable determines how many stars should be filled for the main product rating
   const filledStarsMain = Math.round(Number(product?.averageRating) || 0);
 
   const handleAddToCart = () => {
@@ -157,6 +158,7 @@ const ShopDetails = () => {
                 <div className="flex items-center gap-2 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <span key={i}>
+                      {/* CORRECTED: Ensure FaStar is used for filled stars and FaRegStar for empty */}
                       {i < filledStarsMain ? (
                         <FaStar className="text-yellow-500" size={20} />
                       ) : (
@@ -266,7 +268,7 @@ const ShopDetails = () => {
                         <div className="flex items-center gap-1">
                           {[...Array(5)].map((_, i) => (
                             <span key={i}>
-                              {i < review.rating ? ( // This logic correctly applies yellow if i is less than the rating
+                              {i < review.rating ? (
                                 <FaStar className="text-yellow-500" size={16} />
                               ) : (
                                 <FaRegStar className="text-gray-400" size={16} />
@@ -279,7 +281,7 @@ const ShopDetails = () => {
                         </p>
                       </div>
                     </div>
-                    <p className="text-gray-800 ml-[52px]">{review.comment}</p> {/* Adjusted margin for alignment */}
+                    <p className="text-gray-800 ml-[52px]">{review.comment}</p>
                   </li>
                 ))}
               </ul>
