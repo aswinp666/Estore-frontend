@@ -254,24 +254,32 @@ const ShopDetails = () => {
               <ul>
                 {reviews.map((review: Review) => (
                   <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i}>
-                          {i < review.rating ? (
-                            <FaStar className="text-yellow-500" size={16} />
-                          ) : (
-                            <FaRegStar className="text-gray-400" size={16} />
-                          )}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Profile Icon Placeholder */}
+                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-dark font-medium">
+                        {review.user?.name ? review.user.name.charAt(0).toUpperCase() : 'A'}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-lg text-dark">
+                          {review.user?.name || 'Anonymous'}
+                        </h4>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i}>
+                              {i < review.rating ? (
+                                <FaStar className="text-yellow-500" size={16} />
+                              ) : (
+                                <FaRegStar className="text-gray-400" size={16} />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                      </div>
                     </div>
-                    <h4 className="font-semibold text-lg text-dark mb-1">
-                      {review.user?.name || 'Anonymous'}
-                    </h4>
-                    <p className="text-sm text-gray-500 mb-2">
-                      Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                    <p className="text-gray-800">{review.comment}</p>
+                    <p className="text-gray-800 ml-[52px]">{review.comment}</p> {/* Adjusted margin for alignment */}
                   </li>
                 ))}
               </ul>
