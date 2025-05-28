@@ -31,12 +31,9 @@ const ShopDetails = () => {
   const productFromRedux = useAppSelector((state) => state.productDetailsReducer.value);
 
   const product = useMemo(() => {
-    // 1. Prioritize product from Redux if it's a valid product (not the initial "0" ID)
     if (productFromRedux && productFromRedux._id && productFromRedux._id !== "0") {
       return productFromRedux;
     }
-
-    // 2. If Redux state is not set or is default, try localStorage (for page refresh scenarios)
     const alreadyExist = typeof window !== 'undefined' ? localStorage.getItem("productDetails") : null;
     if (alreadyExist) {
       try {
@@ -48,17 +45,13 @@ const ShopDetails = () => {
         console.error("Error parsing productDetails from localStorage", e);
       }
     }
+    return null;
+  }, [productFromRedux]);
 
-    return null; // Return null if no valid product found from either source
-  }, [productFromRedux]); // Only re-memoize if productFromRedux changes
-
-  // Effect to save product to localStorage whenever 'product' changes (from Redux)
-  // This ensures localStorage is updated with the latest viewed product
   useEffect(() => {
     if (product && product._id && product._id !== "0") {
       localStorage.setItem("productDetails", JSON.stringify(product));
     } else if (typeof window !== 'undefined' && localStorage.getItem("productDetails")) {
-      // Clear localStorage if product becomes invalid (e.g., productFromRedux is cleared)
       localStorage.removeItem("productDetails");
     }
   }, [product]);
@@ -98,7 +91,6 @@ const ShopDetails = () => {
     }
   }, [product?._id]);
 
-  // This variable determines how many stars should be filled for the main product rating
   const filledStarsMain = Math.round(Number(product?.averageRating) || 0);
 
   const handleAddToCart = () => {
@@ -158,7 +150,6 @@ const ShopDetails = () => {
                 <div className="flex items-center gap-2 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <span key={i}>
-                      {/* CORRECTED: Ensure FaStar is used for filled stars and FaRegStar for empty */}
                       {i < filledStarsMain ? (
                         <FaStar className="text-yellow-500" size={20} />
                       ) : (
@@ -243,54 +234,58 @@ const ShopDetails = () => {
         <div className="text-center text-lg py-20">Please select a product to view details.</div>
       )}
 
+      {/* USER RATINGS AND REVIEWS SECTION - MODIFIED BELOW */}
       {product && product._id !== "0" && (
-        <section className="py-10">
+        <section className="py-10 bg-gray-50"> {/* Optional: Add a light background to the whole section */}
           <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-            <h2 className="text-2xl font-semibold mb-5">User Ratings and Reviews</h2>
+            <h2 className="text-2xl font-semibold mb-6 text-center sm:text-left">User Ratings and Reviews</h2>
 
             {loadingReviews ? (
-              <p>Loading reviews...</p>
+              <p className="text-center">Loading reviews...</p>
             ) : errorReviews ? (
-              <p className="text-red-500">Error: {errorReviews}</p>
+              <p className="text-red-500 text-center">Error: {errorReviews}</p>
             ) : reviews.length > 0 ? (
-              <ul>
+              <ul className="flex flex-wrap -mx-2"> {/* MODIFIED: Flex container for grid layout, negative margin for gutter */}
                 {reviews.map((review: Review) => (
-                  <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
-                    <div className="flex items-center gap-3 mb-2">
-                      {/* Profile Icon */}
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                        <FaUserCircle size={28} /> {/* FaUserCircle icon */}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-lg text-dark">
-                          {review.user?.name || 'Anonymous'}
-                        </h4>
-                        <div className="flex items-center gap-1 review-stars" style={{ '--rating': review.rating } as React.CSSProperties}>
-                          {[...Array(5)].map((_, i) => (
-                            <span key={i} className={i < review.rating ? "star filled" : "star"}>
-                              <FaStar size={16} />
-                            </span>
-                          ))}
-                          <style jsx>{`
-                            .review-stars .star {
-                              color: #d1d5db; /* Tailwind gray-400 */
-                            }
-                            .review-stars .star.filled {
-                              color: #facc15; /* Tailwind yellow-400 */
-                            }
-                          `}</style>
+                  <li key={review._id} className="w-full sm:w-1/2 lg:w-1/4 px-2 mb-4"> {/* MODIFIED: Width for columns, padding for gutter, margin bottom */}
+                    <div className="bg-white p-4 rounded-lg shadow-md h-full flex flex-col"> {/* MODIFIED: Card styling, no border, full height, flex column */}
+                      <div className="flex items-start gap-3 mb-2"> {/* items-start for avatar alignment */}
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 flex-shrink-0">
+                          <FaUserCircle size={28} />
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
+                        <div className="flex-grow">
+                          <h4 className="font-semibold text-dark"> {/* text-lg removed for compactness */}
+                            {review.user?.name || 'Anonymous'}
+                          </h4>
+                          <div className="flex items-center gap-0.5 review-stars mt-0.5" style={{ '--rating': review.rating } as React.CSSProperties}>
+                            {[...Array(5)].map((_, i) => (
+                              <span key={i} className={i < review.rating ? "star filled" : "star"}>
+                                <FaStar size={14} /> {/* Smaller stars for compactness */}
+                              </span>
+                            ))}
+                            <style jsx>{`
+                              .review-stars .star {
+                                color: #d1d5db; /* Tailwind gray-300 or 400 */
+                              }
+                              .review-stars .star.filled {
+                                color: #f59e0b; /* Tailwind amber-500 or yellow-500 */
+                              }
+                            `}</style>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1"> {/* Smaller date text */}
+                            Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                        </div>
                       </div>
+                      <p className="text-sm text-gray-700 mt-1 leading-relaxed"> {/* Smaller comment text, adjusted margin, leading for readability */}
+                        {review.comment}
+                      </p>
                     </div>
-                    <p className="text-gray-800 ml-[52px]">{review.comment}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>No reviews yet for this product.</p>
+              <p className="text-center">No reviews yet for this product.</p>
             )}
           </div>
         </section>
