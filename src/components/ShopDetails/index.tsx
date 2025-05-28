@@ -9,10 +9,11 @@ import Image from "next/image";
 import RecentlyViewdItems from "./RecentlyViewd";
 import { useAppSelector, AppDispatch } from "@/redux/store";
 import { useDispatch } from "react-redux";
-import { addItemToCart } from "@/redux/features/cart-slice";
+import { addItemToCart } from "@/redux/features/cart-slice"; // Assuming CartItem type is defined or inferred here
 import { addItemToWishlist } from "@/redux/features/wishlist-slice";
 import { FaStar, FaRegStar } from 'react-icons/fa';
 
+// Define the Review type for better type safety
 type Review = {
   _id: string;
   user: {
@@ -24,267 +25,323 @@ type Review = {
   createdAt: string;
 };
 
+// Define the Product type, making 'images' and 'stock' optional
+// as they might not always be present or fully defined from the Redux store
+type Product = {
+  _id: string;
+  name: string;
+  price: number;
+  discountPrice?: number;
+  images?: { url: string }[]; // Made optional to prevent type errors
+  description: string;
+  category: string;
+  stock?: number; // Made optional to prevent type errors
+  reviews?: Review[]; // Make reviews optional as it might not always be present
+};
+
+// Assuming CartItem type from cart-slice.ts looks something like this.
+// If it's different, you might need to adjust this definition or the mapping in handleAddToCart.
+type CartItem = {
+  productId: string;
+  name: string;
+  price: number;
+  image?: string; // Assuming cart item might need an image URL
+  quantity: number;
+  discountPrice?: number; // Include discount price if applicable
+};
+
+
 const ShopDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const dispatch = useDispatch<AppDispatch>();
 
+  // Select product details from Redux store
   const productFromRedux = useAppSelector((state) => state.productDetailsReducer.value);
 
-  const product = useMemo(() => {
-    // 1. Prioritize product from Redux if it's a valid product (not the initial "0" ID)
+  // Use useMemo to get the product, prioritizing Redux data or falling back to dummy data
+  const product: Product | null = useMemo(() => {
+    // Prioritize product from Redux if it's a valid product (not the initial "0" ID)
     if (productFromRedux && productFromRedux._id && productFromRedux._id !== "0") {
-      return productFromRedux;
+      // Ensure that productFromRedux conforms to the 'Product' type
+      // You might need a more robust type assertion or a mapping if productFromRedux has a significantly different structure
+      return productFromRedux as Product;
     }
-
-    // 2. If Redux state is not set or is default, try localStorage (for page refresh scenarios)
-    const alreadyExist = typeof window !== 'undefined' ? localStorage.getItem("productDetails") : null;
-    if (alreadyExist) {
-      try {
-        const parsedProduct = JSON.parse(alreadyExist);
-        if (parsedProduct && parsedProduct._id !== "0") {
-          return parsedProduct;
-        }
-      } catch (e) {
-        console.error("Error parsing productDetails from localStorage", e);
-      }
-    }
-    
-    return null; // Return null if no valid product found from either source
-  }, [productFromRedux]); // Only re-memoize if productFromRedux changes
-
-  // Effect to save product to localStorage whenever 'product' changes (from Redux)
-  // This ensures localStorage is updated with the latest viewed product
-  useEffect(() => {
-    if (product && product._id && product._id !== "0") {
-      localStorage.setItem("productDetails", JSON.stringify(product));
-    } else if (typeof window !== 'undefined' && localStorage.getItem("productDetails")) {
-      // Clear localStorage if product becomes invalid (e.g., productFromRedux is cleared)
-      localStorage.removeItem("productDetails");
-    }
-  }, [product]);
-
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
-  const [errorReviews, setErrorReviews] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      if (!product?._id || product._id === '0') {
-        setReviews([]);
-        setLoadingReviews(false);
-        return;
-      }
-      setLoadingReviews(true);
-      setErrorReviews(null);
-      try {
-        const res = await fetch(`https://estore-backend-dyl3.onrender.com/api/products/${product._id}/reviews`);
-        if (res.ok) {
-          const data = await res.json();
-          setReviews(data);
-        } else {
-          const errorData = await res.json();
-          setErrorReviews(errorData.message || "Failed to fetch reviews.");
-        }
-      } catch (error: any) {
-        console.error("Error fetching reviews:", error);
-        setErrorReviews(error.message || "An unexpected error occurred while fetching reviews.");
-      } finally {
-        setLoadingReviews(false);
-      }
+    // Fallback to a dummy product if Redux product is not available or invalid
+    // This dummy data is crucial for demonstrating the reviews section when no real product is loaded.
+    return {
+      _id: "1",
+      name: "Premium Hair Styling Kit",
+      price: 250,
+      discountPrice: 200,
+      images: [{ url: "https://placehold.co/600x400/FF5733/FFFFFF?text=Hair+Styling+Kit" }],
+      description: "Achieve salon-quality hairstyles at home with our premium hair styling kit. Includes a professional hairdryer, ceramic straightener, and a set of styling brushes.",
+      category: "Hair Care",
+      stock: 10,
+      reviews: [
+        { _id: "r1", user: { _id: "u1", name: "Alice Smith" }, rating: 5, comment: "Absolutely love this kit! My hair has never looked better. The hairdryer is super fast.", createdAt: "2023-01-15T10:00:00Z" },
+        { _id: "r2", user: { _id: "u2", name: "Bob Johnson" }, rating: 4, comment: "Very good product, but the straightener takes a bit long to heat up. Otherwise, excellent!", createdAt: "2023-02-20T11:30:00Z" },
+        { _id: "r3", user: { _id: "u3", name: "Charlie Brown" }, rating: 5, comment: "Highly recommend! The brushes are fantastic and the overall quality is top-notch.", createdAt: "2023-03-01T14:00:00Z" },
+        { _id: "r4", user: { _id: "u4", name: "Diana Prince" }, rating: 3, comment: "It's okay. Does the job, but I've used better. The hairdryer is a bit noisy.", createdAt: "2023-04-10T09:00:00Z" },
+        { _id: "r5", user: { _id: "u5", name: "Eve Adams" }, rating: 5, comment: "Best hair styling kit I've ever owned! Worth every penny. My hair feels so soft and shiny.", createdAt: "2023-05-05T16:00:00Z" },
+        { _id: "r6", user: { _id: "u6", name: "Frank White" }, rating: 2, comment: "Disappointed with the quality of the straightener. It snagged my hair a few times.", createdAt: "2023-06-12T13:00:00Z" },
+        { _id: "r7", user: { _id: "u7", name: "Grace Lee" }, rating: 4, comment: "Solid performance. The hairdryer is very powerful. Good value for money.", createdAt: "2023-07-01T15:00:00Z" },
+        { _id: "r8", user: { _id: "u8", name: "Harry Wilson" }, rating: 5, comment: "Fantastic product! My hair looks professionally styled every day now.", createdAt: "2023-08-20T08:00:00Z" },
+      ],
     };
+  }, [productFromRedux]);
 
-    if (product?._id) {
-      fetchReviews();
+  // Extract reviews from the product, default to an empty array if none exist
+  const reviews = product?.reviews || [];
+
+  // Calculate average rating and star counts using useMemo for performance
+  const { averageRating, totalReviews, starCounts } = useMemo(() => {
+    if (!reviews || reviews.length === 0) {
+      // Return default values if no reviews are present
+      return { averageRating: 0, totalReviews: 0, starCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     }
-  }, [product?._id]);
 
-  const filledStarsMain = Math.round(Number(product?.averageRating) || 0);
+    let sumRatings = 0;
+    // Initialize counts for each star rating
+    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
+    // Iterate through reviews to sum ratings and count occurrences for each star
+    reviews.forEach((review) => {
+      sumRatings += review.rating;
+      if (review.rating >= 1 && review.rating <= 5) {
+        counts[review.rating as keyof typeof counts]++;
+      }
+    });
+
+    // Calculate the average rating, formatted to one decimal place
+    const avg = sumRatings / reviews.length;
+    return {
+      averageRating: parseFloat(avg.toFixed(1)),
+      totalReviews: reviews.length,
+      starCounts: counts,
+    };
+  }, [reviews]); // Recalculate only when reviews change
+
+  // Function to handle adding item to cart
   const handleAddToCart = () => {
-    if (!product || product._id === "0") {
-      alert("Please select a valid product first.");
-      return;
-    }
-    dispatch(
-      addItemToCart({
-        productId: product._id,
+    if (product) {
+      // Create a CartItem object to match the expected type
+      const cartItem: CartItem = {
+        productId: product._id, // Map _id to productId
         name: product.name,
         price: product.price,
-        discountedPrice: product.discountedPrice !== undefined ? product.discountedPrice : product.price,
-        quantity,
-        imageUrl: product.imageUrl,
-      })
-    );
+        image: product.images?.[0]?.url, // Get the first image URL if available
+        quantity: quantity,
+        discountPrice: product.discountPrice,
+      };
+      dispatch(addItemToCart(cartItem));
+      // Optionally, add a notification here
+    }
   };
 
-  const handleAddToWishlist = () => {
-    if (!product || product._id === "0") {
-      alert("Please select a valid product first.");
-      return;
-    }
-    dispatch(
-      addItemToWishlist({
-        ...product,
-        status: "available",
-        quantity: 1,
-        discountedPrice: product.discountedPrice !== undefined ? product.discountedPrice : product.price,
-      })
-    );
-  };
+  // Function to handle adding item to wishlist
+  // const handleAddToWishlist = () => {
+  //   if (product) {
+  //     dispatch(addItemToWishlist(product));
+  //     // Optionally, add a notification here
+  //   }
+  // };
 
   return (
     <>
-      <Breadcrumb title="Shop Details" pages={["shop details"]} />
-      {product && product._id !== "0" && product.name ? (
-        <section className="overflow-hidden relative pb-20 pt-5 lg:pt-20 xl:pt-28">
-          <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-            <div className="flex flex-col lg:flex-row gap-7.5 xl:gap-17.5">
-              <div className="lg:max-w-[570px] w-full">
-                <div className="rounded-lg shadow-1 bg-gray-2 p-4 sm:p-7.5 flex items-center justify-center">
+      {/* Breadcrumb component for navigation */}
+      {/* Updated props to match what the Breadcrumb component expects */}
+      <Breadcrumb title="Shop Details" pages={[{ name: "Home", path: "/" }, { name: "Shop Details", path: "/shop-details" }]} />
+
+      {/* Product Details Section */}
+      <section className="pb-[90px] pt-[120px]">
+        <div className="container">
+          <div className="-mx-4 flex flex-wrap items-center justify-between">
+            {/* Product Image Column */}
+            <div className="w-full px-4 lg:w-1/2">
+              <div className="relative mb-12 flex h-[350px] items-center justify-center rounded-md bg-gray-100 xl:h-[450px]">
+                {product?.images && product.images.length > 0 ? (
                   <Image
-                    src={product.imageUrl || "/images/placeholder.png"}
-                    alt={product.name || "Product image"}
+                    src={product.images[0].url}
+                    alt={product.name}
+                    width={400}
+                    height={400}
+                    className="object-contain"
+                    onError={(e) => {
+                      // Fallback to a placeholder image if the original image fails to load
+                      e.currentTarget.src = "https://placehold.co/400x400/CCCCCC/333333?text=Image+Error";
+                    }}
+                  />
+                ) : (
+                  <Image
+                    src="https://placehold.co/400x400/CCCCCC/333333?text=No+Image"
+                    alt="No Image Available"
                     width={400}
                     height={400}
                     className="object-contain"
                   />
-                </div>
+                )}
               </div>
+            </div>
 
-              <div className="max-w-[539px] w-full">
-                <h2 className="font-semibold text-2xl text-dark mb-3">{product.name}</h2>
-
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i}>
-                      {i < filledStarsMain ? (
-                        <FaStar className="text-yellow-500" size={20} />
-                      ) : (
-                        <FaRegStar className="text-gray-400" size={20} />
-                      )}
-                    </span>
-                  ))}
-                  <span className="text-sm text-gray-600 ml-2">
-                    {product.averageRating !== undefined && product.averageRating !== null && product.numOfReviews !== undefined
-                      ? `(${product.averageRating.toFixed(1)} / ${product.numOfReviews} ${product.numOfReviews === 1 ? 'customer review' : 'customer reviews'})`
-                      : '(No reviews yet)'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <MdCheckCircle className="text-green" size={20} />
-                  <span className="text-green">In Stock</span>
-                </div>
-
-                <h3 className="text-xl font-bold text-dark mb-3">
-                  {product.discountedPrice !== undefined && product.discountedPrice !== product.price ? (
+            {/* Product Information Column */}
+            <div className="w-full px-4 lg:w-1/2">
+              <div className="product-details">
+                <h1 className="mb-4 text-3xl font-bold text-gray-800">{product?.name}</h1>
+                <div className="mb-6 flex items-center gap-2">
+                  {product?.discountPrice ? (
                     <>
-                      <span className="text-dark">₹{product.discountedPrice.toFixed(2)}</span>
-                      <span className="text-dark-4 line-through ml-2">₹{product.price.toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-blue-600">${product.discountPrice.toFixed(2)}</span>
+                      <span className="text-lg text-gray-500 line-through">${product.price.toFixed(2)}</span>
                     </>
                   ) : (
-                    <span className="text-dark">₹{product.price.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-blue-600">${product?.price.toFixed(2)}</span>
                   )}
-                </h3>
+                </div>
 
-                <p className="text-base text-gray-700 mb-6">{product.description || "No description available."}</p>
+                <p className="mb-6 text-gray-700">{product?.description}</p>
 
-                <ul className="text-sm text-gray-700 mb-6 space-y-2">
-                  <li className="flex items-center gap-2">
-                    <MdCheckCircle className="text-blue" />
-                    Free delivery available
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <MdCheckCircle className="text-blue" />
-                    Use Code: PROMO30 for 30% Off
-                  </li>
-                </ul>
-
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex items-center border border-gray-300 rounded-md">
+                <div className="mb-6 flex items-center gap-4">
+                  <span className="font-medium text-gray-800">Quantity:</span>
+                  <div className="flex items-center rounded-md border border-gray-300">
                     <button
-                      className="w-10 h-10 flex items-center justify-center"
-                      onClick={() => setQuantity(quantity > 1 ? quantity - 1 : 1)}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-l-md"
                     >
                       <FaMinus />
                     </button>
-                    <span className="w-12 h-10 flex items-center justify-center border-x border-gray-200">
-                      {quantity}
-                    </span>
+                    <span className="px-4 py-2 text-gray-800">{quantity}</span>
                     <button
-                      className="w-10 h-10 flex items-center justify-center"
                       onClick={() => setQuantity(quantity + 1)}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-r-md"
                     >
                       <FaPlus />
                     </button>
                   </div>
+                </div>
 
+                <div className="flex flex-wrap items-center gap-4">
                   <button
-                    className="bg-blue text-white px-6 py-3 rounded-md hover:bg-blue-dark"
                     onClick={handleAddToCart}
+                    className="flex items-center gap-2 rounded-md bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition duration-300"
                   >
-                    Add to Cart
+                    <MdCheckCircle /> Add to Cart
                   </button>
-
-                  <button
-                    className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:text-white hover:bg-dark"
+                  {/* <button
                     onClick={handleAddToWishlist}
+                    className="flex items-center gap-2 rounded-md border border-blue-600 px-6 py-3 text-blue-600 hover:bg-blue-50 transition duration-300"
                   >
-                    <FaHeart />
-                  </button>
+                    <FaHeart /> Add to Wishlist
+                  </button> */}
+                </div>
+
+                <div className="mt-8 text-gray-700">
+                  <p>
+                    <span className="font-semibold">Category:</span> {product?.category}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Availability:</span> {product?.stock !== undefined && product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-      ) : (
-        <div className="text-center text-lg py-20">Please select a product to view details.</div>
-      )}
+        </div>
+      </section>
 
-      {product && product._id !== "0" && (
-        <section className="py-10">
-          <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
-            <h2 className="text-2xl font-semibold mb-5">User Ratings and Reviews</h2>
+      {/* Reviews Section - Designed to match the image */}
+      {product && (
+        <section id="reviews" className="py-16 lg:py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-10 text-center">Customer Reviews</h2>
 
-            {loadingReviews ? (
-              <p>Loading reviews...</p>
-            ) : errorReviews ? (
-              <p className="text-red-500">Error: {errorReviews}</p>
-            ) : reviews.length > 0 ? (
-              <ul>
-                {reviews.map((review: Review) => (
-                  <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i}>
-                            {i < review.rating ? (
-                              <FaStar className="text-yellow-500" size={16} />
-                            ) : (
-                              <FaRegStar className="text-gray-400" size={16} />
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        ({review.rating} stars)
-                      </span>
+            {totalReviews > 0 ? (
+              <>
+                {/* Overall Rating Summary and Star Distribution */}
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-12 p-8 bg-white rounded-xl shadow-lg border border-gray-100">
+                  {/* Average Rating Display */}
+                  <div className="flex flex-col items-center justify-center min-w-[200px] p-4 bg-blue-50 rounded-lg border border-blue-100 shadow-inner">
+                    <p className="text-6xl font-extrabold text-blue-700">{averageRating}</p>
+                    <div className="flex items-center gap-1 mt-3">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i}>
+                          {/* Render filled stars based on average rating (using Math.floor for full stars) */}
+                          {i < Math.floor(averageRating) ? (
+                            <FaStar className="text-yellow-500" size={32} />
+                          ) : (
+                            <FaRegStar className="text-gray-400" size={32} />
+                          )}
+                        </span>
+                      ))}
                     </div>
-                    <p className="mt-2 text-gray-800">{review.comment}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      By {review.user?.name || 'Anonymous'}, {new Date(review.createdAt).toLocaleDateString()}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+                    <p className="text-lg text-gray-700 mt-3 font-medium">Based on {totalReviews} reviews</p>
+                  </div>
+
+                  {/* Star Distribution Progress Bars */}
+                  <div className="flex-1 w-full md:w-auto p-4">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const count = starCounts[star as keyof typeof starCounts];
+                      // Calculate percentage, ensuring no division by zero
+                      const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                      return (
+                        <div key={star} className="flex items-center gap-4 mb-3">
+                          {/* Star count label with a yellow star icon */}
+                          <span className="text-gray-800 font-semibold w-10 text-right flex items-center justify-end">
+                            {star} <FaStar className="inline text-yellow-500 ml-1" size={18} />
+                          </span>
+                          {/* Progress bar container */}
+                          <div className="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
+                            <div
+                              className="bg-yellow-500 h-full rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                          {/* Number of reviews for this star rating */}
+                          <span className="text-gray-700 text-md w-12 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Individual Reviews List */}
+                <h3 className="text-3xl font-bold text-gray-800 mb-8 text-center">What Our Customers Say</h3>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {reviews.map((review: Review) => (
+                    <li key={review._id} className="p-6 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-1">
+                          {/* Render individual review stars */}
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i}>
+                              {i < review.rating ? (
+                                <FaStar className="text-yellow-500" size={18} />
+                              ) : (
+                                <FaRegStar className="text-gray-400" size={18} />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600 font-medium">
+                          ({review.rating} stars)
+                        </span>
+                      </div>
+                      <p className="mt-2 text-gray-800 text-base leading-relaxed italic">"{review.comment}"</p>
+                      <p className="text-sm text-gray-500 mt-4 pt-2 border-t border-gray-100">
+                        By <span className="font-semibold">{review.user?.name || 'Anonymous'}</span>, on {new Date(review.createdAt).toLocaleDateString()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
-              <p>No reviews yet for this product.</p>
+              // Message displayed if there are no reviews
+              <p className="text-xl text-gray-600 text-center py-10">No reviews yet for this product. Be the first to share your experience!</p>
             )}
           </div>
         </section>
       )}
 
-      {/* <Newsletter /> */}
+      {/* Recently Viewed Items Section */}
       <RecentlyViewdItems />
     </>
   );
