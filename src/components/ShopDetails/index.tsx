@@ -292,7 +292,7 @@ const ShopDetails = () => {
       )}
 
       {/* <Newsletter /> */}
-      <RecentlyViewdItems />
+      {/* <RecentlyViewdItems /> */}
     </>
   );
 };
