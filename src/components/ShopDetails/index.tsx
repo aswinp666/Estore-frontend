@@ -254,26 +254,24 @@ const ShopDetails = () => {
               <ul>
                 {reviews.map((review: Review) => (
                   <li key={review._id} className="mb-5 p-4 border rounded-md shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i}>
-                            {i < review.rating ? (
-                              <FaStar className="text-yellow-500" size={16} />
-                            ) : (
-                              <FaRegStar className="text-gray-400" size={16} />
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        ({review.rating} stars)
-                      </span>
+                    <div className="flex items-center gap-2 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i}>
+                          {i < review.rating ? (
+                            <FaStar className="text-yellow-500" size={16} />
+                          ) : (
+                            <FaRegStar className="text-gray-400" size={16} />
+                          )}
+                        </span>
+                      ))}
                     </div>
-                    <p className="mt-2 text-gray-800">{review.comment}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      By {review.user?.name || 'Anonymous'}, {new Date(review.createdAt).toLocaleDateString()}
+                    <h4 className="font-semibold text-lg text-dark mb-1">
+                      {review.user?.name || 'Anonymous'}
+                    </h4>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
+                    <p className="text-gray-800">{review.comment}</p>
                   </li>
                 ))}
               </ul>
