@@ -25,12 +25,12 @@ export const menuData: Menu[] = [
     newTab: false,
     path: "/",
     submenu: [
-      {
-        id: 61,
-        name: "Shop With Sidebar",
-        newTab: false,
-        path: "/shop-with-sidebar",
-      },
+      // {
+      //   id: 61,
+      //   name: "Shop With Sidebar",
+      //   newTab: false,
+      //   path: "/shop-with-sidebar",
+      // },
       {
         id: 64,
         name: "Checkout",
