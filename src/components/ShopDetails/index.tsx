@@ -265,16 +265,20 @@ const ShopDetails = () => {
                         <h4 className="font-semibold text-lg text-dark">
                           {review.user?.name || 'Anonymous'}
                         </h4>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 review-stars" style={{ '--rating': review.rating } as React.CSSProperties}>
                           {[...Array(5)].map((_, i) => (
-                            <span key={i}>
-                              {i < review.rating ? (
-                                <FaStar className="text-yellow-500" size={16} />
-                              ) : (
-                                <FaRegStar className="text-gray-400" size={16} />
-                              )}
+                            <span key={i} className={i < review.rating ? "star filled" : "star"}>
+                              <FaStar size={16} />
                             </span>
                           ))}
+                          <style jsx>{`
+                            .review-stars .star {
+                              color: #d1d5db; /* Tailwind gray-400 */
+                            }
+                            .review-stars .star.filled {
+                              color: #facc15; /* Tailwind yellow-400 */
+                            }
+                          `}</style>
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
                           Reviewed on {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
