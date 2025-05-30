@@ -9,8 +9,6 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../../redux/features/auth-slice"; // adjust path as needed
 import { AppDispatch } from "@/redux/store";
-import { ToastContainer, toast } from 'react-toastify'; // Import ToastContainer and toast
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
 
 const Signin = () => {
   const router = useRouter();
@@ -35,19 +33,15 @@ const Signin = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message);
-      }
+      if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("yourAuthTokenKey", data.token);
-      toast.success("Signed in with Google successfully!"); // Success toast
 
       // 🔁 Force full reload after sign-in
       window.location.href = "/";
-    } catch (err: any) {
+    } catch {
       setError("Failed to sign in with Google.");
-      toast.error(err.message || "Failed to sign in with Google."); // Error toast
     } finally {
       setIsLoading(false);
     }
@@ -64,18 +58,14 @@ const Signin = () => {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message);
-      }
+      if (!res.ok) throw new Error(data.message);
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("yourAuthTokenKey", data.token);
-      toast.success("Signed in successfully!"); // Success toast
       // 🔁 Force full reload after sign-in
       window.location.href = "/";
-    } catch (err: any) {
+    } catch (err) {
       setError("Invalid credentials");
-      toast.error(err.message || "Invalid credentials."); // Error toast
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +89,8 @@ const Signin = () => {
       
       setStep("verify");
       setSuccessMsg(data.message || "OTP sent to your email.");
-      toast.success(data.message || "OTP sent to your email."); // Success toast
     } catch (err: any) {
       setError(err.message || "Failed to send OTP. Please try again.");
-      toast.error(err.message || "Failed to send OTP. Please try again."); // Error toast
     } finally {
       setIsLoading(false);
     }
@@ -126,10 +114,8 @@ const Signin = () => {
 
       setStep("reset");
       setSuccessMsg(data.message || "OTP verified successfully");
-      toast.success(data.message || "OTP verified successfully!"); // Success toast
     } catch (err: any) {
       setError(err.message || "Failed to verify OTP");
-      toast.error(err.message || "Failed to verify OTP."); // Error toast
     } finally {
       setIsLoading(false);
     }
@@ -152,13 +138,11 @@ const Signin = () => {
       }
 
       setSuccessMsg(data.message || "Password reset successfully");
-      toast.success(data.message || "Password reset successfully!"); // Success toast
       setStep("signin");
       setOtp("");
       setNewPassword("");
     } catch (err: any) {
       setError(err.message || "Failed to reset password");
-      toast.error(err.message || "Failed to reset password."); // Error toast
     } finally {
       setIsLoading(false);
     }
@@ -168,8 +152,6 @@ const Signin = () => {
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       <Breadcrumb title="Signin" pages={["Signin"]} />
-      {/* ToastContainer with high z-index */}
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" style={{ zIndex: 9999 }} />
       <section className="py-12 md:py-20 bg-gray-50 min-h-screen flex items-center">
         <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 w-full">
           {/* Sign In Step */}
@@ -259,10 +241,7 @@ const Signin = () => {
               <div className="flex justify-center">
                 <GoogleLogin 
                   onSuccess={handleGoogleSignIn} 
-                  onError={() => {
-                    setError("Google login failed");
-                    toast.error("Google login failed."); // Error toast
-                  }} 
+                  onError={() => setError("Google login failed")} 
                   useOneTap 
                   theme="filled_blue"
                   size="medium"
