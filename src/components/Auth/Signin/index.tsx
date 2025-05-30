@@ -1,3 +1,4 @@
+// index.tsx
 "use client";
 
 import Breadcrumb from "@/components/Common/Breadcrumb";
@@ -9,6 +10,8 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../../redux/features/auth-slice"; // adjust path as needed
 import { AppDispatch } from "@/redux/store";
+import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import toastify CSS
 
 const Signin = () => {
   const router = useRouter();
@@ -38,10 +41,16 @@ const Signin = () => {
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("yourAuthTokenKey", data.token);
 
-      // 🔁 Force full reload after sign-in
-      window.location.href = "/";
-    } catch {
-      setError("Failed to sign in with Google.");
+      // Show success toast BEFORE redirection
+      toast.success("Successfully signed in with Google!");
+
+      // Use router.push for client-side navigation if possible,
+      // or window.location.href if a full hard reload is strictly needed
+      // but router.push is generally preferred in Next.js for better UX.
+      router.push("/"); // Redirect to home page
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in with Google.");
+      toast.error(err.message || "Failed to sign in with Google."); // Show error toast
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +71,15 @@ const Signin = () => {
       dispatch(setUser(data.user));
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("yourAuthTokenKey", data.token);
-      // 🔁 Force full reload after sign-in
-      window.location.href = "/";
-    } catch (err) {
+
+      // Show success toast BEFORE redirection
+      toast.success("Successfully signed in!");
+
+      // Use router.push for client-side navigation
+      router.push("/"); // Redirect to home page
+    } catch (err: any) {
       setError("Invalid credentials");
+      toast.error("Invalid credentials"); // Show error toast
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +87,7 @@ const Signin = () => {
 
   const handleSendOtp = async () => {
     setError(null);
+    setSuccessMsg(null);
     setIsLoading(true);
     try {
       const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/send-otp", {
@@ -89,8 +104,10 @@ const Signin = () => {
       
       setStep("verify");
       setSuccessMsg(data.message || "OTP sent to your email.");
+      toast.info(data.message || "OTP sent to your email."); // Toast for OTP sent
     } catch (err: any) {
       setError(err.message || "Failed to send OTP. Please try again.");
+      toast.error(err.message || "Failed to send OTP. Please try again."); // Toast for OTP error
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +115,7 @@ const Signin = () => {
 
   const handleVerifyOtp = async () => {
     setError(null);
+    setSuccessMsg(null);
     setIsLoading(true);
     try {
       const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/verify-otp", {
@@ -114,8 +132,10 @@ const Signin = () => {
 
       setStep("reset");
       setSuccessMsg(data.message || "OTP verified successfully");
+      toast.success(data.message || "OTP verified successfully"); // Toast for OTP verified
     } catch (err: any) {
       setError(err.message || "Failed to verify OTP");
+      toast.error(err.message || "Failed to verify OTP"); // Toast for OTP verification error
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +143,7 @@ const Signin = () => {
 
   const handleResetPassword = async () => {
     setError(null);
+    setSuccessMsg(null);
     setIsLoading(true);
     try {
       const res = await fetch("https://estore-backend-dyl3.onrender.com/api/auth/reset-password", {
@@ -141,8 +162,10 @@ const Signin = () => {
       setStep("signin");
       setOtp("");
       setNewPassword("");
+      toast.success(data.message || "Password reset successfully! Please sign in with your new password."); // Toast for password reset success
     } catch (err: any) {
       setError(err.message || "Failed to reset password");
+      toast.error(err.message || "Failed to reset password."); // Toast for password reset error
     } finally {
       setIsLoading(false);
     }
@@ -151,6 +174,19 @@ const Signin = () => {
   
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+      {/* ToastContainer added here as well, with a high z-index */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ zIndex: 99999 }} // Ensure it's on top of other elements
+      />
       <Breadcrumb title="Signin" pages={["Signin"]} />
       <section className="py-12 md:py-20 bg-gray-50 min-h-screen flex items-center">
         <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 w-full">
@@ -167,6 +203,7 @@ const Signin = () => {
                   {error}
                 </div>
               )}
+              {/* No successMsg display here, as toast handles it */}
               
               <form onSubmit={handleEmailPasswordLogin} className="space-y-4">
                 <div>
@@ -209,24 +246,24 @@ const Signin = () => {
                   </button>
                 </div>
                <button
-  type="submit"
-  disabled={isLoading}
-  style={{
-    width: '100%',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.5rem',
-    border: '1px solid gray',
-    backgroundColor: 'white',
-    color: 'black',
-    fontWeight: '500',
-    cursor: isLoading ? 'not-allowed' : 'pointer',
-    opacity: isLoading ? 0.7 : 1,
-    transition: 'opacity 0.3s ease',
-    outline: 'none',
-  }}
->
-  {isLoading ? 'Signing in...' : 'Sign in'}
-</button>
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid gray',
+                    backgroundColor: 'white',
+                    color: 'black',
+                    fontWeight: '500',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    opacity: isLoading ? 0.7 : 1,
+                    transition: 'opacity 0.3s ease',
+                    outline: 'none',
+                  }}
+                >
+                  {isLoading ? 'Signing in...' : 'Sign in'}
+                </button>
               </form>
               
               <div className="my-6 relative">
@@ -272,7 +309,7 @@ const Signin = () => {
                 </div>
               )}
               
-              {successMsg && (
+              {successMsg && ( // Keep successMsg for non-toast messages if desired, but toast duplicates
                 <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">
                   {successMsg}
                 </div>
@@ -331,7 +368,7 @@ const Signin = () => {
                 </div>
               )}
               
-              {successMsg && (
+              {successMsg && ( // Keep successMsg for non-toast messages if desired
                 <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">
                   {successMsg}
                 </div>
@@ -401,7 +438,7 @@ const Signin = () => {
                 </div>
               )}
               
-              {successMsg && (
+              {successMsg && ( // Keep successMsg for non-toast messages if desired
                 <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-lg text-sm">
                   {successMsg}
                 </div>
