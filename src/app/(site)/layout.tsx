@@ -19,10 +19,6 @@ import { AppDispatch } from "@/redux/store";
 import { setUser } from "@/redux/features/auth-slice";
 import { clearCart,fetchUserCart } from "@/redux/features/cart-slice";
 
-// Import ToastContainer and toast
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
@@ -45,37 +41,22 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const user = localStorage.getItem("user");
+ useEffect(() => {
+  const user = localStorage.getItem("user");
 
-    if (user) {
-      const parsedUser = JSON.parse(user);
-      dispatch(setUser(parsedUser));
-      dispatch(fetchUserCart());
-    } else {
-      dispatch(clearCart()); // ✅ clear Redux cart if user not found
-    }
-  }, [dispatch]);
+  if (user) {
+    const parsedUser = JSON.parse(user);
+    dispatch(setUser(parsedUser));
+    dispatch(fetchUserCart());
+  } else {
+    dispatch(clearCart()); // ✅ clear Redux cart if user not found
+  }
+}, [dispatch]);
 
   return (
     <CartModalProvider>
       <ModalProvider>
         <PreviewSliderProvider>
-          {/* Add ToastContainer here with a high z-index */}
-          <ToastContainer 
-            position="top-right" 
-            autoClose={5000} 
-            hideProgressBar={false} 
-            newestOnTop={false} 
-            closeOnClick 
-            rtl={false} 
-            pauseOnFocusLoss 
-            draggable 
-            pauseOnHover 
-            theme="colored" 
-            style={{ zIndex: 9999 }} // High z-index
-          />
-
           {loading ? (
             <PreLoader />
           ) : (
