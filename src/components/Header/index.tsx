@@ -36,11 +36,11 @@ const Header = () => {
     const signInSuccess = localStorage.getItem("signInSuccess");
     if (signInSuccess) {
       toast.success("Successfully signed in!");
-      localStorage.removeItem("signInSuccess"); // Clear the flag
+      localStorage.removeItem("signInSuccess"); // Clear the flag after showing toast
     }
   }, []);
 
-  const handleSignOut = () => {
+ const handleSignOut = () => {
     if (window.confirm("Are you sure you want to sign out?")) { // Confirmation pop-up
       // Remove user session / authentication token
       localStorage.removeItem("yourAuthTokenKey");
@@ -53,7 +53,7 @@ const Header = () => {
       toast.info("You have been signed out."); // Toast for sign out
       router.push("/signin"); // Redirect to the sign-in page
     }
-  };
+};
 
   const handleOpenCartModal = () => {
     openCartModal();
@@ -82,7 +82,7 @@ const Header = () => {
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
     return () => {
-      window.removeEventListener("scroll", handleStickyMenu);
+      window.removeEventListener("scroll", handleStickyMenu); // Cleanup on unmount
     };
   }, []);
 
@@ -103,7 +103,20 @@ const Header = () => {
         stickyMenu && "shadow"
       }`}
     >
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      {/* ToastContainer with high z-index */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{ zIndex: 99999 }} // Ensures toasts appear above other elements
+      />
+
       <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
         {/* */}
         <div
