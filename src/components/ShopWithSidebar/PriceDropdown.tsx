@@ -2,7 +2,7 @@ import { useState } from 'react';
 import RangeSlider from 'react-range-slider-input';
 import 'react-range-slider-input/dist/style.css';
 
-const PriceDropdown = ({ onPriceChange, selectedPrice }) => {
+const PriceDropdown = ({ onPriceChange, selectedPrice, maxRange }) => {
   const [toggleDropdown, setToggleDropdown] = useState(true);
 
   return (
@@ -45,7 +45,7 @@ const PriceDropdown = ({ onPriceChange, selectedPrice }) => {
             <RangeSlider
               id="range-slider-gradient"
               className="margin-lg"
-              step={'any'}
+              step={1} // Using a defined step (e.g., 1) is generally better for predictability
               onInput={(e) =>
                 onPriceChange({
                   from: Math.floor(e[0]),
@@ -53,7 +53,8 @@ const PriceDropdown = ({ onPriceChange, selectedPrice }) => {
                 })
               }
               value={[selectedPrice.from, selectedPrice.to]}
-              max={selectedPrice.to} // <--- Added this line
+              min={0} // Explicitly set the minimum value for the slider
+              max={maxRange} // Use the maxRange prop for the slider's absolute maximum
             />
 
             <div className="price-amount flex items-center justify-between pt-4">

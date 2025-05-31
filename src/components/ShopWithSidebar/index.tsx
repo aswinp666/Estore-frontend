@@ -6,12 +6,12 @@ import CategoryDropdown from "./CategoryDropdown";
 import PriceDropdown from "./PriceDropdown";
 import SingleGridItem from "../Shop/SingleGridItem";
 import SingleListItem from "../Shop/SingleListItem";
-import { 
-  FiChevronLeft, 
-  FiChevronRight, 
-  FiGrid, 
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiGrid,
   FiList,
-  FiArrowRight 
+  FiArrowRight
 } from "react-icons/fi";
 import { useSearchParams } from "next/navigation";
 
@@ -25,7 +25,10 @@ const ShopWithSidebar = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedPrice, setSelectedPrice] = useState({ from: 0, to: 200000 });
+
+  const MAX_PRICE_RANGE = 200000; // Define your absolute maximum price here
+  const [selectedPrice, setSelectedPrice] = useState({ from: 0, to: MAX_PRICE_RANGE }); // Initialize with the new max
+
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 9;
 
@@ -73,7 +76,7 @@ useEffect(() => {
     currentFilteredProducts = currentFilteredProducts.filter(
       (product) => product.price >= selectedPrice.from && product.price <= selectedPrice.to
     );
-    
+
     setFilteredProducts(currentFilteredProducts);
     setCurrentPage(1); // Reset to first page when filter changes
   }, [selectedCategory, selectedPrice, products]); // Add selectedPrice to dependencies
@@ -95,7 +98,7 @@ useEffect(() => {
   // Generate categories from products data
   const generateCategories = () => {
     const categoryCounts = {};
-    
+
     products.forEach((product) => {
       if (categoryCounts[product.category]) {
         categoryCounts[product.category]++;
@@ -126,7 +129,7 @@ useEffect(() => {
 
   const handleCleanAllFilters = () => {
     setSelectedCategory("All");
-    setSelectedPrice({ from: 0, to: 1000 }); // Reset price to initial max range
+    setSelectedPrice({ from: 0, to: MAX_PRICE_RANGE }); // Reset price to initial max range
   };
 
   // Pagination logic
@@ -198,7 +201,7 @@ useEffect(() => {
                   <div className="bg-white shadow-1 rounded-lg py-4 px-5">
                     <div className="flex items-center justify-between">
                       <p>Filters:</p>
-                      <button 
+                      <button
                         type="button"
                         onClick={handleCleanAllFilters} // Call clean all filters
                         className="text-blue"
@@ -209,16 +212,17 @@ useEffect(() => {
                   </div>
 
                   {/* */}
-                  <CategoryDropdown 
-                    categories={categories} 
+                  <CategoryDropdown
+                    categories={categories}
                     onSelectCategory={handleCategorySelect}
                     selectedCategory={selectedCategory}
                   />
 
                   {/* */}
-                  <PriceDropdown 
-                    onPriceChange={handlePriceChange} // Pass handler
-                    selectedPrice={selectedPrice} // Pass selected price
+                  <PriceDropdown
+                    onPriceChange={handlePriceChange}
+                    selectedPrice={selectedPrice}
+                    maxRange={MAX_PRICE_RANGE} // Pass the absolute max range
                   />
                 </div>
               </form>
