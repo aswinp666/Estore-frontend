@@ -25,7 +25,7 @@ const ShopWithSidebar = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedPrice, setSelectedPrice] = useState({ from: 0, to: 100000 });
+  const [selectedPrice, setSelectedPrice] = useState({ from: 0, to: 200000 });
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 9;
 
