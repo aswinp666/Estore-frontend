@@ -5,7 +5,7 @@ import Image from "next/image";
 import AddressModal from "./AddressModal";
 import Orders from "../Orders";
 
-const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSince to props
+const MyAccount = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [addressModal, setAddressModal] = useState(false);
 
@@ -24,7 +24,7 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
       <section className="overflow-hidden py-20 bg-gray-2">
         <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
           <div className="flex flex-col xl:flex-row gap-7.5">
-            {/* */}
+            {/* <!--== user dashboard menu start ==--> */}
             <div className="xl:max-w-[370px] w-full bg-white rounded-xl shadow-1">
               <div className="flex xl:flex-col">
                 <div className="hidden lg:flex flex-wrap items-center gap-5 py-6 px-4 sm:px-7.5 xl:px-9 border-r xl:border-r-0 xl:border-b border-gray-3">
@@ -39,9 +39,9 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
 
                   <div>
                     <p className="font-medium text-dark mb-0.5">
-                      {userName} {/* Use userName prop here */}
+                      James Septimus
                     </p>
-                    <p className="text-custom-xs">Member Since {memberSince} </p> {/* Use memberSince prop here */}
+                    <p className="text-custom-xs">Member Since Sep 2020</p>
                   </div>
                 </div>
 
@@ -160,8 +160,11 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                 </div>
               </div>
             </div>
-            {/* */}
-            {/* */}
+            {/* <!--== user dashboard menu end ==-->
+
+            
+          <!--== user dashboard content start ==--> */}
+            {/* <!-- dashboard tab content start --> */}
 
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${
@@ -185,7 +188,9 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                 password and account details.
               </p>
             </div>
-            {/* */}
+            {/* <!-- dashboard tab content end -->
+
+          <!-- orders tab content start --> */}
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 ${
                 activeTab === "orders" ? "block" : "hidden"
@@ -193,7 +198,9 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
             >
               <Orders />
             </div>
-            {/* */}
+            {/* <!-- orders tab content end -->
+
+          <!-- downloads tab content start --> */}
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${
                 activeTab === "downloads" ? "block" : "hidden"
@@ -201,7 +208,9 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
             >
               <p>You don&apos;t have any download</p>
             </div>
-            {/* */}
+            {/* <!-- downloads tab content end -->
+
+          <!-- addresses tab content start --> */}
             <div
               className={`flex-col sm:flex-row gap-7.5 ${
                 activeTab === "addresses" ? "flex" : "hidden"
@@ -259,7 +268,7 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                           fill=""
                         />
                       </svg>
-                      Name: {userName}
+                      Name: James Septimus
                     </p>
 
                     <p className="flex items-center gap-2.5 text-custom-sm">
@@ -391,7 +400,7 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                           fill=""
                         />
                       </svg>
-                      Name: {userName}
+                      Name: James Septimus
                     </p>
 
                     <p className="flex items-center gap-2.5 text-custom-sm">
@@ -471,7 +480,9 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                 </div>
               </div>
             </div>
-            {/* */}
+            {/* <!-- addresses tab content end -->
+
+          <!-- details tab content start --> */}
             <div
               className={`xl:max-w-[770px] w-full ${
                 activeTab === "account-details" ? "block" : "hidden"
@@ -615,7 +626,8 @@ const MyAccount = ({ userName, memberSince }) => { // Add userName and memberSin
                 </div>
               </form>
             </div>
-            {/* */}
+            {/* <!-- details tab content end -->
+          <!--== user dashboard content end ==--> */}
           </div>
         </div>
       </section>
