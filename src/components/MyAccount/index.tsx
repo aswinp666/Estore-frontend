@@ -1,12 +1,97 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Breadcrumb from "../Common/Breadcrumb";
 import Image from "next/image";
 import AddressModal from "./AddressModal";
 import Orders from "../Orders";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
+import { setUser } from "../../redux/features/auth-slice"; // Assuming this is the correct path
+
+// Define ApiOrder and CartItem interfaces
+interface CartItem { // Basic definition, expand if needed
+  name: string;
+  // Add other properties like price, quantity from your Invoice model if used
+}
+
+interface ApiOrder {
+  _id: string;
+  createdAt: string;
+  orderStatus?: string | null;
+  grandTotal?: number | null;
+  cartItems?: CartItem[];
+  // Add any other properties your API returns for an order
+}
 
 const MyAccount = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [userOrders, setUserOrders] = useState<ApiOrder[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(true);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [totalOrdersCount, setTotalOrdersCount] = useState<number>(0);
+  const [totalSpent, setTotalSpent] = useState<number>(0);
+
+  // Extend userData type to include createdAt as optional
+  type UserData = {
+    _id: string;
+    name: string;
+    email: string;
+    createdAt?: string;
+  };
+  const userData = useSelector((state: RootState) => state.authReducer.user) as UserData;
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      const token = localStorage.getItem("yourAuthTokenKey");
+
+      if (!token) {
+        setOrderError("Please log in to view dashboard details.");
+        setIsLoadingOrders(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('https://estore-backend-dyl3.onrender.com/api/invoice/my-orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error("Unauthorized access. Please log in again.");
+          }
+          throw new Error(`Failed to fetch orders. Status: ${response.status}`);
+        }
+        const data = await response.json();
+        const rawOrders: ApiOrder[] = Array.isArray(data) ? data : data.orders || [];
+        setUserOrders(rawOrders);
+      } catch (err: any) {
+        setOrderError(err.message || "An unknown error occurred while fetching orders.");
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    if (userOrders && userOrders.length > 0) {
+      const count = userOrders.length;
+      const spent = userOrders.reduce((acc, order) => {
+        const orderTotal = order.grandTotal || 0; // Default to 0 if grandTotal is null/undefined
+        return acc + orderTotal;
+      }, 0);
+
+      setTotalOrdersCount(count);
+      setTotalSpent(spent);
+    } else {
+      // If there are no orders, reset totals to 0
+      setTotalOrdersCount(0);
+      setTotalSpent(0);
+    }
+  }, [userOrders]); // Dependency array: recalculate when userOrders changes
+
   const [addressModal, setAddressModal] = useState(false);
 
   const openAddressModal = () => {
@@ -39,9 +124,16 @@ const MyAccount = () => {
 
                   <div>
                     <p className="font-medium text-dark mb-0.5">
-                      James Septimus
+                      {userData?.name || "User Name"}
                     </p>
-                    <p className="text-custom-xs">Member Since Sep 2020</p>
+                    <p className="text-custom-xs">
+                      {userData?.createdAt ?
+                        `Member Since ${new Date(userData.createdAt).toLocaleDateString('en-GB', {
+                          month: 'short',
+                          year: 'numeric',
+                        })}`
+                        : "Member since N/A"}
+                    </p>
                   </div>
                 </div>
 
@@ -172,21 +264,44 @@ const MyAccount = () => {
               }`}
             >
               <p className="text-dark">
-                Hello Annie (not Annie?
-                <a
-                  href="#"
-                  className="text-red ease-out duration-200 hover:underline"
-                >
+                Hello {userData?.name || "User"} (not {userData?.name || "User"}?{" "}
+                <button onClick={() => setActiveTab("logout")} className="text-red ease-out duration-200 hover:underline">
                   Log Out
-                </a>
+                </button>
                 )
               </p>
 
               <p className="text-custom-sm mt-4">
-                From your account dashboard you can view your recent orders,
-                manage your shipping and billing addresses, and edit your
-                password and account details.
+                From your account dashboard you can view your recent orders, manage your
+                shipping and billing addresses, edit your password and account details,
+                and see a summary of your activity.
               </p>
+
+              {/* Dashboard Stats Section */}
+              <div className="mt-6 space-y-4">
+                <h2 className="text-xl font-semibold text-dark">Your Activity</h2>
+                {isLoadingOrders ? (
+                  <p className="text-custom-sm">Loading your activity summary...</p>
+                ) : orderError ? (
+                  <p className="text-custom-sm text-red">Error loading activity: {orderError}</p>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-custom-sm text-dark-2">Total Orders:</p>
+                      <p className="text-lg font-medium text-dark">{totalOrdersCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-custom-sm text-dark-2">Total Spent:</p>
+                      <p className="text-lg font-medium text-dark">
+                        ₹{totalSpent.toFixed(2)}
+                      </p>
+                    </div>
+                    {userOrders.length === 0 && !orderError && (
+                      <p className="text-custom-sm text-dark-2">You haven't placed any orders yet.</p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
             {/* <!-- dashboard tab content end -->
 
