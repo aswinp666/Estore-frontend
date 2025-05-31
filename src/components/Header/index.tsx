@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import CustomSelect from "./CustomSelect";
-import { menuData } from "./menuData";
-import Dropdown from "./Dropdown";
-import { useAppSelector } from "@/redux/store";
-import { useSelector } from "react-redux";
-import { selectTotalPrice } from "@/redux/features/cart-slice";
-import { useCartModalContext } from "@/app/context/CartSidebarModalContext";
+import CustomSelect from "./CustomSelect"; // Assuming this component exists
+import { menuData } from "./menuData"; // Assuming this data exists
+import Dropdown from "./Dropdown"; // Assuming this component exists
+import { useAppSelector } from "@/redux/store"; // Assuming Redux setup
+import { useSelector } from "react-redux"; // Assuming Redux setup
+import { selectTotalPrice } from "@/redux/features/cart-slice"; // Assuming Redux slice
+import { useCartModalContext } from "@/app/context/CartSidebarModalContext"; // Assuming context
 import Image from "next/image";
 import ProductSearchModal from './ProductSearchModal';
 import { useRouter } from "next/navigation";
@@ -30,20 +30,20 @@ const Header = () => {
     setIsLoggedIn(!!user);
   }, []);
 
- const handleSignOut = () => {
-  // Remove user session / authentication token
-  localStorage.removeItem("yourAuthTokenKey"); // <--- ADD THIS LINE!
-  localStorage.removeItem("user");
+  const handleSignOut = () => {
+    // Remove user session / authentication token
+    localStorage.removeItem("yourAuthTokenKey"); // <--- ADD THIS LINE!
+    localStorage.removeItem("user");
 
-  // ✅ Clear cart from localStorage manually (frontend only)
-  localStorage.removeItem("cartItems");       // or whatever key you're using
-  localStorage.removeItem("cartTotalPrice"); // if you save total
+    // ✅ Clear cart from localStorage manually (frontend only)
+    localStorage.removeItem("cartItems");       // or whatever key you're using
+    localStorage.removeItem("cartTotalPrice"); // if you save total
 
-  // Optional: reset Redux state by reloading (only if needed)
-  window.location.reload(); // Removed this line as router.push will handle navigation
+    // Optional: reset Redux state by reloading (only if needed)
+    // window.location.reload(); // Removed this line as router.push will handle navigation
 
-  router.push("/signin"); // Redirect to the sign-in page
-};
+    router.push("/signin"); // Redirect to the sign-in page
+  };
 
   const handleOpenCartModal = () => {
     openCartModal();
@@ -71,7 +71,8 @@ const Header = () => {
 
   useEffect(() => {
     window.addEventListener("scroll", handleStickyMenu);
-  });
+    return () => window.removeEventListener("scroll", handleStickyMenu); // Cleanup
+  }, []);
 
   const options = [
     { label: "All Categories", value: "0" },
@@ -92,13 +93,13 @@ const Header = () => {
     >
 
       <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
-        {/* <!-- header top start --> */}
+        {/* */}
         <div
           className={`flex flex-col lg:flex-row gap-5 items-end lg:items-center xl:justify-between ease-out duration-200 ${
             stickyMenu ? "py-4" : "py-6"
           }`}
         >
-          {/* <!-- header top left --> */}
+          {/* */}
           <div className="xl:w-auto flex-col sm:flex-row w-full flex sm:justify-between sm:items-center gap-5 sm:gap-10">
             <Link className="flex-shrink-0" href="/">
               <Image
@@ -115,7 +116,7 @@ const Header = () => {
                   
 
                   <div className="relative max-w-[333px] sm:min-w-[333px] w-full">
-                    {/* <!-- divider --> */}
+                    {/* */}
                     
                     <input
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -155,7 +156,7 @@ const Header = () => {
             </div>
           </div>
 
-          {/* <!-- header top right --> */}
+          {/* */}
           <div className="flex w-full lg:w-auto items-center gap-7.5">
             <div className="hidden xl:flex items-center gap-3.5">
               <svg
@@ -193,46 +194,88 @@ const Header = () => {
               </div>
             </div>
 
-            {/* <!-- divider --> */}
+            {/* */}
             <span className="hidden xl:block w-px h-7.5 bg-gray-4"></span>
 
             <div className="flex w-full lg:w-auto justify-between items-center gap-5">
               <div className="flex items-center gap-5">
-             <Link 
-        href={isLoggedIn ? "#" : "/signin"} 
-        className="flex items-center gap-2.5"
-        onClick={isLoggedIn ? handleSignOut : undefined}
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M12 1.25C9.37666 1.25 7.25001 3.37665 7.25001 6C7.25001 8.62335 9.37666 10.75 12 10.75C14.6234 10.75 16.75 8.62335 16.75 6C16.75 3.37665 14.6234 1.25 12 1.25ZM8.75001 6C8.75001 4.20507 10.2051 2.75 12 2.75C13.7949 2.75 15.25 4.20507 15.25 6C15.25 7.79493 13.7949 9.25 12 9.25C10.2051 9.25 8.75001 7.79493 8.75001 6Z"
-            fill="#3C50E0"
-          />
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M12 12.25C9.68646 12.25 7.55494 12.7759 5.97546 13.6643C4.4195 14.5396 3.25001 15.8661 3.25001 17.5L3.24995 17.602C3.24882 18.7638 3.2474 20.222 4.52642 21.2635C5.15589 21.7761 6.03649 22.1406 7.22622 22.3815C8.41927 22.6229 9.97424 22.75 12 22.75C14.0258 22.75 15.5808 22.6229 16.7738 22.3815C17.9635 22.1406 18.8441 21.7761 19.4736 21.2635C20.7526 20.222 20.7512 18.7638 20.7501 17.602L20.75 17.5C20.75 15.8661 19.5805 14.5396 18.0246 13.6643C16.4451 12.7759 14.3136 12.25 12 12.25ZM4.75001 17.5C4.75001 16.6487 5.37139 15.7251 6.71085 14.9717C8.02681 14.2315 9.89529 13.75 12 13.75C14.1047 13.75 15.9732 14.2315 17.2892 14.9717C18.6286 15.7251 19.25 16.6487 19.25 17.5C19.25 18.8078 19.2097 19.544 18.5264 20.1004C18.1559 20.4022 17.5365 20.6967 16.4762 20.9113C15.4193 21.1252 13.9742 21.25 12 21.25C10.0258 21.25 8.58075 21.1252 7.52380 20.9113C6.46354 20.6967 5.84413 20.4022 5.47360 20.1004C4.79033 19.544 4.75001 18.8078 4.75001 17.5Z"
-            fill="#3C50E0"
-          />
-        </svg>
-
-        <div>
-          <span className="block text-2xs text-dark-4 uppercase">
-            account
-          </span>
-          <p className="font-medium text-custom-sm text-dark">
-            {isLoggedIn ? "Sign Out" : "Sign In"}
-          </p>
-        </div>
-      </Link>
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/my-account"
+                      className="flex items-center gap-2.5"
+                    >
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M12 1.25C9.37666 1.25 7.25001 3.37665 7.25001 6C7.25001 8.62335 9.37666 10.75 12 10.75C14.6234 10.75 16.75 8.62335 16.75 6C16.75 3.37665 14.6234 1.25 12 1.25ZM8.75001 6C8.75001 4.20507 10.2051 2.75 12 2.75C13.7949 2.75 15.25 4.20507 15.25 6C15.25 7.79493 13.7949 9.25 12 9.25C10.2051 9.25 8.75001 7.79493 8.75001 6Z"
+                          fill="#3C50E0"
+                        />
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M12 12.25C9.68646 12.25 7.55494 12.7759 5.97546 13.6643C4.4195 14.5396 3.25001 15.8661 3.25001 17.5L3.24995 17.602C3.24882 18.7638 3.2474 20.222 4.52642 21.2635C5.15589 21.7761 6.03649 22.1406 7.22622 22.3815C8.41927 22.6229 9.97424 22.75 12 22.75C14.0258 22.75 15.5808 22.6229 16.7738 22.3815C17.9635 22.1406 18.8441 21.7761 19.4736 21.2635C20.7526 20.222 20.7512 18.7638 20.7501 17.602L20.75 17.5C20.75 15.8661 19.5805 14.5396 18.0246 13.6643C16.4451 12.7759 14.3136 12.25 12 12.25ZM4.75001 17.5C4.75001 16.6487 5.37139 15.7251 6.71085 14.9717C8.02681 14.2315 9.89529 13.75 12 13.75C14.1047 13.75 15.9732 14.2315 17.2892 14.9717C18.6286 15.7251 19.25 16.6487 19.25 17.5C19.25 18.8078 19.2097 19.544 18.5264 20.1004C18.1559 20.4022 17.5365 20.6967 16.4762 20.9113C15.4193 21.1252 13.9742 21.25 12 21.25C10.0258 21.25 8.58075 21.1252 7.52380 20.9113C6.46354 20.6967 5.84413 20.4022 5.47360 20.1004C4.79033 19.544 4.75001 18.8078 4.75001 17.5Z"
+                          fill="#3C50E0"
+                        />
+                      </svg>
+                      <div>
+                        <span className="block text-2xs text-dark-4 uppercase">
+                          account
+                        </span>
+                        <p className="font-medium text-custom-sm text-dark">
+                          My Account
+                        </p>
+                      </div>
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2.5 text-blue hover:underline"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/signin"
+                    className="flex items-center gap-2.5"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M12 1.25C9.37666 1.25 7.25001 3.37665 7.25001 6C7.25001 8.62335 9.37666 10.75 12 10.75C14.6234 10.75 16.75 8.62335 16.75 6C16.75 3.37665 14.6234 1.25 12 1.25ZM8.75001 6C8.75001 4.20507 10.2051 2.75 12 2.75C13.7949 2.75 15.25 4.20507 15.25 6C15.25 7.79493 13.7949 9.25 12 9.25C10.2051 9.25 8.75001 7.79493 8.75001 6Z"
+                        fill="#3C50E0"
+                      />
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M12 12.25C9.68646 12.25 7.55494 12.7759 5.97546 13.6643C4.4195 14.5396 3.25001 15.8661 3.25001 17.5L3.24995 17.602C3.24882 18.7638 3.2474 20.222 4.52642 21.2635C5.15589 21.7761 6.03649 22.1406 7.22622 22.3815C8.41927 22.6229 9.97424 22.75 12 22.75C14.0258 22.75 15.5808 22.6229 16.7738 22.3815C17.9635 22.1406 18.8441 21.7761 19.4736 21.2635C20.7526 20.222 20.7512 18.7638 20.7501 17.602L20.75 17.5C20.75 15.8661 19.5805 14.5396 18.0246 13.6643C16.4451 12.7759 14.3136 12.25 12 12.25ZM4.75001 17.5C4.75001 16.6487 5.37139 15.7251 6.71085 14.9717C8.02681 14.2315 9.89529 13.75 12 13.75C14.1047 13.75 15.9732 14.2315 17.2892 14.9717C18.6286 15.7251 19.25 16.6487 19.25 17.5C19.25 18.8078 19.2097 19.544 18.5264 20.1004C18.1559 20.4022 17.5365 20.6967 16.4762 20.9113C15.4193 21.1252 13.9742 21.25 12 21.25C10.0258 21.25 8.58075 21.1252 7.52380 20.9113C6.46354 20.6967 5.84413 20.4022 5.47360 20.1004C4.79033 19.544 4.75001 18.8078 4.75001 17.5Z"
+                        fill="#3C50E0"
+                      />
+                    </svg>
+                    <div>
+                      <span className="block text-2xs text-dark-4 uppercase">
+                        account
+                      </span>
+                      <p className="font-medium text-custom-sm text-dark">
+                        Sign In
+                      </p>
+                    </div>
+                  </Link>
+                )}
                 <button
                   onClick={handleOpenCartModal}
                   className="flex items-center gap-2.5"
@@ -282,7 +325,7 @@ const Header = () => {
                 </button>
               </div>
 
-              {/* <!-- Hamburger Toggle BTN --> */}
+              {/* */}
               <button
                 id="Toggle"
                 aria-label="Toggler"
@@ -322,24 +365,24 @@ const Header = () => {
                   </span>
                 </span>
               </button>
-              {/* //   <!-- Hamburger Toggle BTN --> */}
+              {/* //   */}
             </div>
           </div>
         </div>
-        {/* <!-- header top end --> */}
+        {/* */}
       </div>
 
       <div className="border-t border-gray-3">
         <div className="max-w-[1170px] mx-auto px-4 sm:px-7.5 xl:px-0">
           <div className="flex items-center justify-between">
-            {/* <!--=== Main Nav Start ===--> */}
+            {/* */}
             <div
               className={`w-[288px] absolute right-4 top-full xl:static xl:w-auto h-0 xl:h-auto invisible xl:visible xl:flex items-center justify-between ${
                 navigationOpen &&
                 `!visible bg-white shadow-lg border border-gray-3 !h-auto max-h-[400px] overflow-y-scroll rounded-md p-5`
               }`}
             >
-              {/* <!-- Main Nav Start --> */}
+              {/* */}
               <nav>
                 <ul className="flex xl:items-center flex-col xl:flex-row gap-5 xl:gap-6">
                   {menuData.map((menuItem, i) =>
@@ -367,11 +410,11 @@ const Header = () => {
                   )}
                 </ul>
               </nav>
-              {/* //   <!-- Main Nav End --> */}
+              {/* //   */}
             </div>
-            {/* // <!--=== Main Nav End ===--> */}
+            {/* // */}
 
-            {/* // <!--=== Nav Right Start ===--> */}
+            {/* // */}
             <div className="hidden xl:block">
               <ul className="flex items-center gap-5.5">
                 <li className="py-4">
@@ -423,7 +466,7 @@ const Header = () => {
                 </li>
               </ul>
             </div>
-            {/* <!--=== Nav Right End ===--> */}
+            {/* */}
           </div>
         </div>
       </div>
