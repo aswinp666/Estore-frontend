@@ -102,6 +102,18 @@ const MyAccount = () => {
     setAddressModal(false);
   };
 
+  // New function to handle sign out
+  const handleSignOut = () => {
+    // Remove user session / authentication token
+    localStorage.removeItem("yourAuthTokenKey");
+    localStorage.removeItem("user");
+    // Optionally, you might want to redirect the user to the login page or home page
+    // For example, if using Next.js router:
+    // import { useRouter } from 'next/navigation';
+    // const router = useRouter();
+    // router.push('/login');
+  };
+
   return (
     <>
       <Breadcrumb title={"My Account"} pages={["my account"]} />
@@ -109,7 +121,7 @@ const MyAccount = () => {
       <section className="overflow-hidden py-20 bg-gray-2">
         <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
           <div className="flex flex-col xl:flex-row gap-7.5">
-            {/* <!--== user dashboard menu start ==--> */}
+            {/* */}
             <div className="xl:max-w-[370px] w-full bg-white rounded-xl shadow-1">
               <div className="flex xl:flex-col">
                 <div className="hidden lg:flex flex-wrap items-center gap-5 py-6 px-4 sm:px-7.5 xl:px-9 border-r xl:border-r-0 xl:border-b border-gray-3">
@@ -176,7 +188,7 @@ const MyAccount = () => {
                         <path
                           fillRule="evenodd"
                           clipRule="evenodd"
-                          d="M15.9934 1.60413C15.1698 1.6041 14.483 1.60408 13.9377 1.67738C13.3623 1.75475 12.8427 1.92495 12.4252 2.34246C12.0077 2.75998 11.8375 3.27954 11.7601 3.85502C11.6868 4.40024 11.6868 5.08702 11.6869 5.91063V6.00596C11.6868 6.82957 11.6868 7.51635 11.7601 8.06157C11.8375 8.63705 12.0077 9.15661 12.4252 9.57413C12.8427 9.99164 13.3623 10.1618 13.9377 10.2392C14.483 10.3125 15.1697 10.3125 15.9933 10.3125H16.0887C16.9123 10.3125 17.5991 10.3125 18.1443 10.2392C18.7198 10.1618 19.2393 9.99164 19.6569 9.57413C20.0744 9.15661 20.2446 8.63705 20.3219 8.06157C20.3952 7.51636 20.3952 6.82958 20.3952 6.00599V5.91063C20.3952 5.08704 20.3952 4.40023 20.3219 3.85502C20.2446 3.27954 20.0744 2.75998 19.6569 2.34246C19.2393 1.92495 18.7198 1.75475 18.1443 1.67738C17.5991 1.60408 16.9123 1.6041 16.0887 1.60413H15.9934ZM13.3975 3.31474C13.5169 3.19528 13.698 3.09699 14.121 3.04012C14.5637 2.98059 15.1573 2.97913 16.041 2.97913C16.9247 2.97913 17.5183 2.98059 17.9611 3.04012C18.3841 3.09699 18.5651 3.19528 18.6846 3.31474C18.804 3.43419 18.9023 3.61523 18.9592 4.03824C19.0187 4.48102 19.0202 5.07462 19.0202 5.9583C19.0202 6.84197 19.0187 7.43557 18.9592 7.87835C18.9023 8.30136 18.804 8.4824 18.6846 8.60186C18.5651 8.72131 18.3841 8.8196 17.9611 8.87647C17.5183 8.936 16.9247 8.93746 16.041 8.93746C15.1573 8.93746 14.5637 8.936 14.121 8.87647C13.698 8.8196 13.5169 8.72131 13.3975 8.60186C13.278 8.4824 13.1797 8.30136 13.1228 7.87835C13.0633 7.43557 13.0619 6.84197 13.0619 5.9583C13.0619 5.07462 13.0633 4.48102 13.1228 4.03824C13.1797 3.61523 13.278 3.43419 13.3975 3.31474Z"
+                          d="M15.9934 1.60413C15.1698 1.6041 14.483 1.60408 13.9377 1.67738C13.3623 1.75475 12.8427 1.92495 12.4252 2.34246C12.0077 2.75998 11.8375 3.27954 11.7601 3.85502C11.6868 4.40024 11.6868 5.08702 11.6869 5.91063V6.00596C11.6868 6.82957 11.6868 7.51635 11.7601 8.06157C11.8375 8.63705 12.0077 9.15661 12.4252 9.57413C12.8427 9.99164 13.3623 10.1618 13.9377 10.2392C14.483 10.3125 15.1697 10.3125 15.9933 10.3125H16.0887C16.9123 10.3125 17.5991 10.3125 18.1443 10.2392C18.7198 10.1618 19.2393 9.99164 19.6569 9.57413C20.0744 9.15661 20.2446 8.63705 20.3219 8.06157C20.3952 7.51636 20.3952 6.82958 20.3952 6.00599V5.91063C20.3952 5.08704 20.3952 4.40023 20.3219 3.85502C20.2446 3.27954 20.0744 2.75998 19.6569 2.34246C19.2393 1.92495 18.7198 1.75475 18.1443 1.67738C17.5991 1.60408 16.9123 1.6041 16.0887 1.60413H15.9934ZM13.3975 3.31474C13.5169 3.19528 13.698 3.09699 14.121 3.1235C14.5637 3.0639 15.1573 3.0625 16.041 3.0625C16.9247 3.0625 17.5183 3.0639 17.9611 3.1235C18.3841 3.1803 18.5651 3.2786 18.6846 3.3981C18.804 3.5175 18.9023 3.6986 18.9592 4.1216C19.0187 4.5644 19.0202 5.158 19.0202 6.0416C19.0202 6.9253 19.0187 7.5189 18.9592 7.9617C18.9023 8.3847 18.804 8.5657 18.6846 8.6852C18.5651 8.8046 18.3841 8.9029 17.9611 8.9598C17.5183 9.0193 16.9247 9.0208 16.041 9.0208C15.1573 9.0208 14.5637 9.0193 14.121 8.9598C13.698 8.9029 13.5169 8.8046 13.3975 8.6852C13.278 8.5657 13.1797 8.3847 13.1228 7.9617C13.0633 7.5189 13.0619 6.9253 13.0619 6.0416C13.0619 5.158 13.0633 4.5644 13.1228 4.1216C13.1797 3.6986 13.278 3.5175 13.3975 3.3981Z"
                           fill=""
                         />
                       </svg>
@@ -222,7 +234,10 @@ const MyAccount = () => {
 
 
                     <button
-                      onClick={() => setActiveTab("logout")}
+                      onClick={() => {
+                        setActiveTab("logout"); // Keep this to change the active tab style
+                        handleSignOut(); // Call the logout function
+                      }}
                       className={`flex items-center rounded-md gap-2.5 py-3 px-4.5 ease-out duration-200 hover:bg-blue hover:text-white ${
                         activeTab === "logout"
                           ? "text-white bg-blue"
@@ -252,11 +267,8 @@ const MyAccount = () => {
                 </div>
               </div>
             </div>
-            {/* <!--== user dashboard menu end ==-->
-
-            
-          <!--== user dashboard content start ==--> */}
-            {/* <!-- dashboard tab content start --> */}
+            {/* */}
+            {/* */}
 
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 py-9.5 px-4 sm:px-7.5 xl:px-10 ${
@@ -265,7 +277,7 @@ const MyAccount = () => {
             >
               <p className="text-dark">
                 Hello {userData?.name || "User"} (not {userData?.name || "User"}?{" "}
-                <button onClick={() => setActiveTab("logout")} className="text-red ease-out duration-200 hover:underline">
+                <button onClick={handleSignOut} className="text-red ease-out duration-200 hover:underline">
                   Log Out
                 </button>
                 )
@@ -301,9 +313,7 @@ const MyAccount = () => {
                 )}
               </div>
             </div>
-            {/* <!-- dashboard tab content end -->
-
-          <!-- orders tab content start --> */}
+            {/* */}
             <div
               className={`xl:max-w-[770px] w-full bg-white rounded-xl shadow-1 ${
                 activeTab === "orders" ? "block" : "hidden"
