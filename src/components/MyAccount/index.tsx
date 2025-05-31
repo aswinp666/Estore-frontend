@@ -272,9 +272,7 @@ const MyAccount = () => {
               </p>
 
               <p className="text-custom-sm mt-4">
-                From your account dashboard you can view your recent orders, manage your
-                shipping and billing addresses, edit your password and account details,
-                and see a summary of your activity.
+                From your account dashboard you can view your Order Overview.
               </p>
 
               {/* Dashboard Stats Section */}
