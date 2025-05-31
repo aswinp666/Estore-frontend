@@ -25,6 +25,7 @@ const ShopWithSidebar = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedPrice, setSelectedPrice] = useState({ from: 0, to: 1000 }); // Add state for price
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 9;
 
@@ -59,18 +60,23 @@ useEffect(() => {
     fetchProducts();
   }, []);
 
-  // Filter products based on selected category
+  // Filter products based on selected category and price
   useEffect(() => {
-    if (selectedCategory === "All") {
-      setFilteredProducts(products);
-    } else {
-      const filtered = products.filter(
+    let currentFilteredProducts = products;
+
+    if (selectedCategory !== "All") {
+      currentFilteredProducts = currentFilteredProducts.filter(
         (product) => product.category === selectedCategory
       );
-      setFilteredProducts(filtered);
     }
+
+    currentFilteredProducts = currentFilteredProducts.filter(
+      (product) => product.price >= selectedPrice.from && product.price <= selectedPrice.to
+    );
+    
+    setFilteredProducts(currentFilteredProducts);
     setCurrentPage(1); // Reset to first page when filter changes
-  }, [selectedCategory, products]);
+  }, [selectedCategory, selectedPrice, products]); // Add selectedPrice to dependencies
 
   const handleStickyMenu = () => {
     if (window.scrollY >= 80) {
@@ -112,6 +118,15 @@ useEffect(() => {
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
+  };
+
+  const handlePriceChange = (priceRange) => { // Handler for price change
+    setSelectedPrice(priceRange);
+  };
+
+  const handleCleanAllFilters = () => {
+    setSelectedCategory("All");
+    setSelectedPrice({ from: 0, to: 1000 }); // Reset price to initial max range
   };
 
   // Pagination logic
@@ -157,7 +172,7 @@ useEffect(() => {
       <section className="overflow-hidden relative pb-20 pt-5 lg:pt-20 xl:pt-28 bg-[#f3f4f6]">
         <div className="max-w-[1170px] w-full mx-auto px-4 sm:px-8 xl:px-0">
           <div className="flex gap-7.5">
-            {/* <!-- Sidebar Start --> */}
+            {/* */}
             <div
               className={`sidebar-content fixed xl:z-1 z-9999 left-0 top-0 xl:translate-x-0 xl:static max-w-[310px] xl:max-w-[270px] w-full ease-out duration-200 ${
                 productSidebar
@@ -179,15 +194,13 @@ useEffect(() => {
 
               <form onSubmit={(e) => e.preventDefault()}>
                 <div className="flex flex-col gap-6">
-                  {/* <!-- filter box --> */}
+                  {/* */}
                   <div className="bg-white shadow-1 rounded-lg py-4 px-5">
                     <div className="flex items-center justify-between">
                       <p>Filters:</p>
                       <button 
                         type="button"
-                        onClick={() => {
-                          setSelectedCategory("All");
-                        }}
+                        onClick={handleCleanAllFilters} // Call clean all filters
                         className="text-blue"
                       >
                         Clean All
@@ -195,25 +208,28 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* <!-- category box --> */}
+                  {/* */}
                   <CategoryDropdown 
                     categories={categories} 
                     onSelectCategory={handleCategorySelect}
                     selectedCategory={selectedCategory}
                   />
 
-                  {/* <!-- price range box --> */}
-                  <PriceDropdown />
+                  {/* */}
+                  <PriceDropdown 
+                    onPriceChange={handlePriceChange} // Pass handler
+                    selectedPrice={selectedPrice} // Pass selected price
+                  />
                 </div>
               </form>
             </div>
-            {/* <!-- Sidebar End --> */}
+            {/* */}
 
-            {/* <!-- Content Start --> */}
+            {/* */}
             <div className="xl:max-w-[870px] w-full">
               <div className="rounded-lg bg-white shadow-1 pl-3 pr-2.5 py-2.5 mb-6">
                 <div className="flex items-center justify-between">
-                  {/* <!-- top bar left --> */}
+                  {/* */}
                   <div className="flex flex-wrap items-center gap-4">
                     <CustomSelect options={options} />
 
@@ -224,7 +240,7 @@ useEffect(() => {
                     </p>
                   </div>
 
-                  {/* <!-- top bar right --> */}
+                  {/* */}
                   <div className="flex items-center gap-2.5">
                     <button
                       onClick={() => setProductStyle("grid")}
@@ -253,7 +269,7 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* <!-- Products Grid Tab Content Start --> */}
+              {/* */}
               <div
                 className={`${
                   productStyle === "grid"
@@ -269,9 +285,9 @@ useEffect(() => {
                   )
                 )}
               </div>
-              {/* <!-- Products Grid Tab Content End --> */}
+              {/* */}
 
-              {/* <!-- Products Pagination Start --> */}
+              {/* */}
               {filteredProducts.length > productsPerPage && (
                 <div className="flex justify-center mt-15">
                   <div className="bg-white shadow-1 rounded-md p-2">
@@ -322,9 +338,9 @@ useEffect(() => {
                   </div>
                 </div>
               )}
-              {/* <!-- Products Pagination End --> */}
+              {/* */}
             </div>
-            {/* <!-- Content End --> */}
+            {/* */}
           </div>
         </div>
       </section>

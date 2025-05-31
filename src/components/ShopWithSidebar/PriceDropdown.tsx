@@ -2,13 +2,8 @@ import { useState } from 'react';
 import RangeSlider from 'react-range-slider-input';
 import 'react-range-slider-input/dist/style.css';
 
-const PriceDropdown = () => {
+const PriceDropdown = ({ onPriceChange, selectedPrice }) => { // Add props
   const [toggleDropdown, setToggleDropdown] = useState(true);
-
-  const [selectedPrice, setSelectedPrice] = useState({
-    from: 0,
-    to: 100,
-  });
 
   return (
     <div className="bg-white shadow-1 rounded-lg">
@@ -43,7 +38,7 @@ const PriceDropdown = () => {
         </button>
       </div>
 
-      {/* // <!-- dropdown menu --> */}
+      {/* // */}
       <div className={`p-6 ${toggleDropdown ? 'block' : 'hidden'}`}>
         <div id="pricingOne">
           <div className="price-range">
@@ -52,11 +47,12 @@ const PriceDropdown = () => {
               className="margin-lg"
               step={'any'}
               onInput={(e) =>
-                setSelectedPrice({
+                onPriceChange({ // Call onPriceChange
                   from: Math.floor(e[0]),
                   to: Math.ceil(e[1]),
                 })
               }
+              value={[selectedPrice.from, selectedPrice.to]} // Set value from props
             />
 
             <div className="price-amount flex items-center justify-between pt-4">
