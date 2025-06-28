@@ -121,8 +121,8 @@ const SidebarContent = ({
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Avatar alt="Admin User" src="/static/images/avatar/1.jpg" sx={{ width: 48, height: 48, mr: 2 }} />
         <Box>
-          <Typography variant="subtitle1" fontWeight={600}>Admin User</Typography>
-          <Typography variant="caption">Super Admin</Typography>
+          <Typography variant="subtitle1" fontWeight={600}>Seller</Typography>
+          <Typography variant="caption">Dashboard</Typography>
         </Box>
       </Box>
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }} />

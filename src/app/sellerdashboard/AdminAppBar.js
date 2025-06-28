@@ -42,7 +42,7 @@ const AdminAppBar = ({ toggleDrawer }) => {
         
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-            Admin Dashboard
+            Seller Dashboard
           </Typography>
         </Box>
         
