@@ -1,3 +1,5 @@
+'use client';
+
 // layout.tsx
 import { Inter } from 'next/font/google'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
