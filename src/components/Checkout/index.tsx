@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Breadcrumb from "../Common/Breadcrumb";
 import Login from "./Login";
 import jsPDF from "jspdf";
-import { useAppSelector } from "@/redux/store"; // Already imported
+import { useAppSelector } from "@/redux/store";
 import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
 import { Snackbar, Alert, Button, Box, Typography, Stepper, Step, StepLabel, CircularProgress, StepConnector, stepConnectorClasses, styled } from "@mui/material";
@@ -103,22 +103,16 @@ const Checkout = () => {
     phone: "",
     email: "",
   });
-  const [saveAddress, setSaveAddress] = useState(false);
 
   // New states for payment success and order tracking
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
   const [currentOrderStatus, setCurrentOrderStatus] = useState("Processing");
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
-  const user = useAppSelector((state) => state.authReducer.user); // Get user from Redux
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setBillingData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddressSelect = (address: any) => {
-    setBillingData(address);
   };
 
   useEffect(() => {
@@ -373,24 +367,6 @@ const Checkout = () => {
         const savedOrderData = await saveRes.json();
         await handleSuccessfulOrderPlacement(savedOrderData, "Cash On Delivery");
 
-        if (saveAddress && user && user._id) {
-          try {
-            const saveAddrRes = await fetch(`/api/user/addresses?userId=${user._id}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(billingData),
-            });
-            if (!saveAddrRes.ok) {
-              console.error("Failed to save address (COD):", await saveAddrRes.text());
-              // Optionally show a non-blocking toast to the user
-            } else {
-              console.log("Address saved successfully (COD)");
-            }
-          } catch (addrErr) {
-            console.error("Error saving address (COD):", addrErr);
-          }
-        }
-
       } catch (err: any) {
         console.error("COD order failed", err);
         showToast(err.message || "Order placement failed. Please try again.", "error");
@@ -439,24 +415,6 @@ const Checkout = () => {
               }
               const savedOrderData = await saveRes.json();
               await handleSuccessfulOrderPlacement(savedOrderData, "Paid");
-
-              if (saveAddress && user && user._id) {
-                try {
-                  const saveAddrRes = await fetch(`/api/user/addresses?userId=${user._id}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(billingData),
-                  });
-                  if (!saveAddrRes.ok) {
-                    console.error("Failed to save address (Razorpay):", await saveAddrRes.text());
-                    // Optionally show a non-blocking toast
-                  } else {
-                    console.log("Address saved successfully (Razorpay)");
-                  }
-                } catch (addrErr) {
-                  console.error("Error saving address (Razorpay):", addrErr);
-                }
-              }
 
             } catch (err: any) {
               console.error("Invoice save error after Razorpay:", err);
@@ -722,13 +680,7 @@ const Checkout = () => {
             <div className="flex flex-col lg:flex-row gap-7.5 xl:gap-11">
               <div className="lg:max-w-[670px] w-full">
                 <Login /> {/* Assuming Login component handles its own state */}
-                <Billing
-                  formData={billingData}
-                  handleChange={handleBillingChange}
-                  handleAddressSelect={handleAddressSelect}
-                  saveAddress={saveAddress}
-                  setSaveAddress={setSaveAddress}
-                />
+                <Billing formData={billingData} handleChange={handleBillingChange} />
               </div>
               <div className="max-w-[455px] w-full">
                 <div ref={invoiceRef} className="bg-white shadow-1 rounded-[10px]">
