@@ -1,7 +1,6 @@
-// ProductForm.js
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
@@ -10,24 +9,14 @@ import {
   Button,
   InputAdornment,
   MenuItem,
+  Select,
   FormControl,
   InputLabel,
-  FormGroup,
-  Checkbox,
-  FormControlLabel,
-  IconButton,
-  CardMedia,
-  Alert,
-  CircularProgress
+  FormGroup, FormControlLabel, Checkbox
 } from '@mui/material';
-import {
-  AddCircle as AddCircleIcon,
-  CloudUpload as CloudUploadIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
-import GlassCard from './GlassCard'; // Ensure GlassCard is accessible
+import { AddCircle as AddCircleIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
+import GlassCard from './GlassCard';
 
-// Categories from your backend Product.js model
 const categories = [
   'TV',
   'Mobile',
@@ -39,225 +28,95 @@ const categories = [
   'Groceries'
 ];
 
-// Options per category for rendering inputs and hints (matches Product.js options: Map of arrays)
-const categoryOptionsConfig = {
-  TV: { Size: [] },
-  Mobile: { Color: [], RAM: [] },
-  Consoles: { Edition: [] },
-  Earpods: { Color: [] },
-  Tablets: { Color: [], RAM: [] },
-  'Offer Products': {}, // No specific options usually
-  Camera: {},
-  Groceries: {},
+// Options per category for rendering inputs and hints
+const categoryOptions = {
+  TV: { Size: ['50 inch', '55 inch'] },
+  Mobile: { Color: ['Red', 'Black', 'Silver', 'White'], RAM: ['8GB', '12GB'] },
+  Consoles: { Edition: ['Digital Edition', 'Standard Edition'] },
+  Earpods: { Color: ['Black', 'Silver', 'White'] },
+  Tablets: { Color: ['Black', 'White'], RAM: ['8GB', '12GB'] }
 };
 
-const ProductForm = ({ productToEdit, onProductSaved, API_BASE_URL }) => {
-  const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    image: null, // File object for new image, or URL string for existing image
-    options: {}, // For dynamic options like { Color: ["Red", "Black"], RAM: ["8GB"] }
-  });
-  const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+const ProductForm = ({
+  product,
+  handleChange,
+  handleImageChange,
+  handleSubmit,
+  isEditing = false
+}) => {
+  const [imagePreview, setImagePreview] = React.useState(null);
+  
+  // Manage options state (object with keys and arrays of values)
+  const [options, setOptions] = React.useState(product.options || {});
 
-  const isEditing = Boolean(productToEdit);
-
-  useEffect(() => {
-    if (productToEdit) {
-      setProduct({
-        name: productToEdit.name,
-        description: productToEdit.description,
-        price: productToEdit.price,
-        category: productToEdit.category,
-        image: productToEdit.imageUrl, // Set current image URL
-        options: productToEdit.options || {},
-      });
-      setImagePreview(productToEdit.imageUrl);
-    } else {
-      // Reset form if not editing
-      setProduct({
-        name: '',
-        description: '',
-        price: '',
-        category: '',
-        image: null,
-        options: {},
-      });
-      setImagePreview(null);
-    }
-    setError(null); // Clear errors on product change
-    setSuccess(null); // Clear success message
-  }, [productToEdit]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProduct((prevProduct) => ({
-      ...prevProduct,
-      [name]: value,
-    }));
-
-    // Reset options when category changes
-    if (name === 'category') {
-      setProduct((prevProduct) => ({
-        ...prevProduct,
-        options: {}, // Clear previous options
-      }));
-    }
-  };
-
-  const handleImageChange = (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProduct((prevProduct) => ({
-        ...prevProduct,
-        image: file,
-      }));
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setProduct((prevProduct) => ({
-        ...prevProduct,
-        image: isEditing ? productToEdit.imageUrl : null, // Revert to old image or null
-      }));
-      setImagePreview(isEditing ? productToEdit.imageUrl : null);
+      handleImageChange(e);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
+  
 
-  const handleOptionChange = (optionName, value, isChecked) => {
-    setProduct((prevProduct) => {
-      const currentOptions = { ...prevProduct.options };
-      if (!currentOptions[optionName]) {
-        currentOptions[optionName] = [];
-      }
-
-      if (isChecked) {
-        // Add option value if checked and not already present
-        if (!currentOptions[optionName].includes(value)) {
-          currentOptions[optionName] = [...currentOptions[optionName], value];
-        }
-      } else {
-        // Remove option value if unchecked
-        currentOptions[optionName] = currentOptions[optionName].filter((item) => item !== value);
-      }
-      return { ...prevProduct, options: currentOptions };
-    });
+  // Update options state from comma-separated string input
+  const handleOptionChange = (optionKey, value) => {
+    setOptions(prev => ({
+      ...prev,
+      [optionKey]: value
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v.length > 0)
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+ const onSubmit = (e) => {
+  e.preventDefault();
 
-    const formData = new FormData();
-    formData.append('name', product.name);
-    formData.append('description', product.description);
-    formData.append('price', product.price);
-    formData.append('category', product.category);
+  const extendedProduct = { ...product, options };
+  const formData = new FormData();
 
-    // Append image only if it's a new file, or if it's an existing product and the image was changed
-    if (product.image && typeof product.image !== 'string') {
-      formData.append('image', product.image);
-    }
-    // If editing and image is still a URL string, don't append it to formData for multer
-    // Backend should handle `imageUrl` field directly if provided, or ignore if file is uploaded
+  formData.append('name', extendedProduct.name);
+  formData.append('price', extendedProduct.price);
+  formData.append('description', extendedProduct.description);
+  formData.append('category', extendedProduct.category);
+  if (extendedProduct.image instanceof File) {
+    formData.append('image', extendedProduct.image);
+  }
+  formData.append('options', JSON.stringify(extendedProduct.options));
 
-    // Append options as a JSON string
-    formData.append('options', JSON.stringify(product.options));
+  handleSubmit(formData); // ✅ no event passed here
+};
 
-    // Get token (assuming it's stored in localStorage after login)
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Authentication required. Please log in.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (isEditing) {
-        await axios.put(`${API_BASE_URL}/products/${productToEdit._id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setSuccess('Product updated successfully!');
-      } else {
-        await axios.post(`${API_BASE_URL}/products`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setSuccess('Product added successfully!');
-      }
-      onProductSaved(); // Callback to refresh product list and navigate
-    } catch (err) {
-      console.error('Error saving product:', err.response?.data || err.message);
-      setError(err.response?.data?.error || 'Failed to save product. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderOptionsFields = () => {
-    const selectedCategoryOptions = categoryOptionsConfig[product.category] || {};
-    const optionKeys = Object.keys(selectedCategoryOptions);
-
-    if (optionKeys.length === 0) {
-      return (
-        <Grid item xs={12}>
-          <Typography variant="body2" color="text.secondary">
-            No specific options for this category.
-          </Typography>
-        </Grid>
-      );
-    }
-
-    return optionKeys.map((optionName) => (
-      <Grid item xs={12} sm={6} key={optionName}>
-        <FormControl component="fieldset" fullWidth margin="normal">
-          <InputLabel component="legend" shrink sx={{ position: 'relative', transform: 'none', mb: 1 }}>
-            {optionName} Options
-          </InputLabel>
-          <TextField
-            name={optionName}
-            label={`Enter comma-separated ${optionName} values (e.g., Red,Blue)`}
-            variant="outlined"
-            value={(product.options[optionName] || []).join(', ')}
-            onChange={(e) => {
-              const values = e.target.value.split(',').map(s => s.trim()).filter(s => s);
-              setProduct(prev => ({
-                ...prev,
-                options: { ...prev.options, [optionName]: values }
-              }));
-            }}
-            fullWidth
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-              },
-            }}
-          />
-        </FormControl>
-      </Grid>
-    ));
-  };
 
   return (
-    <GlassCard sx={{ p: 4, mt: 3, mb: 5 }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 3 }}>
-        {isEditing ? 'Edit Product' : 'Add New Product'}
+    <GlassCard sx={{
+      mb: 4,
+      p: 4,
+      backdropFilter: 'blur(16px)',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+    }}>
+      <Typography
+        variant="h5"
+        fontWeight={600}
+        gutterBottom
+        sx={{
+          mb: 3,
+          color: 'text.primary',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}
+      >
+        {isEditing ? '✏️ Edit Product' : '+ Add New Product'}
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onSubmit}>
         <Grid container spacing={3}>
           {/* Product Name */}
           <Grid item xs={12} sm={6}>
@@ -266,15 +125,22 @@ const ProductForm = ({ productToEdit, onProductSaved, API_BASE_URL }) => {
               name="name"
               value={product.name}
               onChange={handleChange}
+              fullWidth
               required
-              sx={{
-                '& .MuiOutlinedInput-root': {
+              variant="outlined"
+              InputProps={{
+                sx: {
                   borderRadius: '12px',
-                },
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.95)'
+                  }
+                }
               }}
             />
           </Grid>
-          {/* Product Price */}
+
+          {/* Price */}
           <Grid item xs={12} sm={6}>
             <TextField
               label="Price"
@@ -282,121 +148,209 @@ const ProductForm = ({ productToEdit, onProductSaved, API_BASE_URL }) => {
               type="number"
               value={product.price}
               onChange={handleChange}
+              fullWidth
               required
+              variant="outlined"
               InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                sx: {
                   borderRadius: '12px',
-                },
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.95)'
+                  }
+                }
               }}
             />
           </Grid>
-          {/* Product Category */}
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Category</InputLabel>
-              <TextField
-                select // Use TextField with select prop for MenuItem
-                label="Category"
-                name="category"
-                value={product.category}
-                onChange={handleChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                  },
-                }}
-              >
-                {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </FormControl>
-          </Grid>
-          {/* Product Description */}
+
+          {/* Description */}
           <Grid item xs={12}>
             <TextField
               label="Description"
               name="description"
               value={product.description}
               onChange={handleChange}
+              fullWidth
+              required
               multiline
               rows={4}
-              required
-              sx={{
-                '& .MuiOutlinedInput-root': {
+              variant="outlined"
+              InputProps={{
+                sx: {
                   borderRadius: '12px',
-                },
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.95)'
+                  }
+                }
               }}
             />
           </Grid>
 
-          {/* Dynamic Product Options based on Category */}
-          {product.category && renderOptionsFields()}
-
-          {/* Product Image Upload */}
-          <Grid item xs={12} sm={6}>
-            <input
-              accept="image/*"
-              style={{ display: 'none' }}
-              id="raised-button-file"
-              multiple
-              type="file"
-              onChange={handleImageChange}
-            />
-            <label htmlFor="raised-button-file">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<CloudUploadIcon />}
-                fullWidth
+          {/* Category */}
+          <Grid item xs={12} sm={12}>
+            <FormControl
+              fullWidth
+              required
+              sx={{ minWidth: '220px' }}
+            >
+              <InputLabel
+                id="category-label"
                 sx={{
-                  height: '56px',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  px: 1,
+                  borderRadius: '4px',
+                  ml: -0.5
+                }}
+              >
+                Category
+              </InputLabel>
+              <Select
+                labelId="category-label"
+                id="category-select"
+                name="category"
+                value={product.category}
+                label="Category"
+                onChange={handleChange}
+                sx={{
+                  width: '100%',
+                  minWidth: '300px',
                   borderRadius: '12px',
-                  border: '2px dashed rgba(41, 98, 255, 0.5)',
-                  color: '#2962FF',
+                  background: 'rgba(255, 255, 255, 0.9)',
                   '&:hover': {
-                    border: '2px dashed #2962FF',
-                    bgcolor: 'rgba(41, 98, 255, 0.05)',
+                    background: 'rgba(255, 255, 255, 0.95)'
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none'
+                  }
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      borderRadius: '12px',
+                      marginTop: '8px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                    }
                   }
                 }}
               >
-                {imagePreview ? 'Change Image' : 'Upload Product Image'}
-              </Button>
-            </label>
-            {imagePreview && (
+                {categories.map((category) => (
+                  <MenuItem
+                    key={category}
+                    value={category}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'rgba(41, 98, 255, 0.08)'
+                      }
+                    }}
+                  >
+                    {category}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Dynamic Options Inputs */}
+          {product.category && categoryOptions[product.category] && (
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Options
+              </Typography>
+
+             {Object.entries(categoryOptions[product.category]).map(([optionKey, optionValues]) => (
+  <Box key={optionKey} sx={{ mb: 2 }}>
+    <Typography variant="subtitle1" gutterBottom>
+      {optionKey}
+    </Typography>
+    <FormGroup row>
+      {optionValues.map((value) => (
+        <FormControlLabel
+          key={value}
+          control={
+            <Checkbox
+              checked={options[optionKey]?.includes(value) || false}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                setOptions((prev) => {
+                  const currentValues = prev[optionKey] || [];
+                  return {
+                    ...prev,
+                    [optionKey]: isChecked
+                      ? [...currentValues, value]
+                      : currentValues.filter((v) => v !== value)
+                  };
+                });
+              }}
+            />
+          }
+          label={value}
+        />
+      ))}
+    </FormGroup>
+  </Box>
+))}
+            </Grid>
+          )}
+
+          {/* Image Upload */}
+          <Grid item xs={12} sm={6}>
+            <Button
+              variant="contained"
+              component="label"
+              fullWidth
+              startIcon={<CloudUploadIcon />}
+              sx={{
+                height: '56px',
+                borderRadius: '12px',
+                background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                boxShadow: '0 4px 15px rgba(41, 98, 255, 0.2)',
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
+                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.3)'
+                }
+              }}
+            >
+              {product.image ? 'Change Image' : 'Upload Product Image'}
+              <input
+                type="file"
+                hidden
+                onChange={handleImageUpload}
+                accept="image/*"
+                required={!isEditing}
+              />
+            </Button>
+            {(product.image || imagePreview) && (
               <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CardMedia
+                <Box
                   component="img"
-                  image={imagePreview}
-                  alt="Product Preview"
-                  sx={{ width: 100, height: 100, borderRadius: '8px', objectFit: 'cover' }}
+                  src={imagePreview || (typeof product.image === 'string' ? product.image : URL.createObjectURL(product.image))}
+                  alt="Preview"
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '8px',
+                    objectFit: 'cover',
+                    border: '1px solid rgba(0, 0, 0, 0.1)'
+                  }}
                 />
-                <Typography variant="body2" color="text.secondary">
-                  {typeof product.image === 'string' ? 'Current Image' : product.image?.name || 'New Image Selected'}
+                <Typography variant="caption" color="text.secondary">
+                  {typeof product.image === 'string' ? 'Current image' : `Selected: ${product.image?.name}`}
                 </Typography>
-                <IconButton onClick={() => {
-                  setProduct(prev => ({ ...prev, image: null }));
-                  setImagePreview(null);
-                }} size="small" color="error">
-                  <DeleteIcon />
-                </IconButton>
               </Box>
             )}
           </Grid>
 
           {/* Submit Button */}
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
             <Button
               type="submit"
               variant="contained"
               fullWidth
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : (isEditing ? <AddCircleIcon /> : <AddCircleIcon />)}
               sx={{
                 height: '56px',
                 borderRadius: '12px',
@@ -406,11 +360,11 @@ const ProductForm = ({ productToEdit, onProductSaved, API_BASE_URL }) => {
                 boxShadow: '0 4px 15px rgba(41, 98, 255, 0.4)',
                 '&:hover': {
                   background: 'linear-gradient(45deg, #2962FF 0%, #2979FF 100%)',
-                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.6)',
+                  boxShadow: '0 6px 20px rgba(41, 98, 255, 0.6)'
                 }
               }}
             >
-              {isEditing ? 'Update Product' : 'Add Product'}
+              {isEditing ? 'Save Changes' : 'Add Product'}
             </Button>
           </Grid>
         </Grid>
