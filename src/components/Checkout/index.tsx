@@ -8,6 +8,7 @@ import { selectTotalPrice } from "@/redux/features/cart-slice";
 import Billing from "./Billing";
 import { Snackbar, Alert, Button, Box, Typography, Stepper, Step, StepLabel, CircularProgress, StepConnector, stepConnectorClasses, styled } from "@mui/material";
 import { Check } from "@mui/icons-material"; // For custom step icon
+import SavedAddresses from "./SavedAddresses"; // Import the new component
 
 // Define Order Statuses
 const ORDER_STATUSES = ["Processing", "Packaged", "Shipped", "Out For Delivery", "Delivered"];
@@ -73,6 +74,20 @@ function QontoStepIcon(props: any) {
   );
 }
 
+// Define the structure for a saved address
+interface SavedAddress {
+  id: string; // Unique ID for each saved address
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  country: string;
+  address: string;
+  addressTwo: string;
+  town: string;
+  phone: string;
+  email: string;
+}
+
 
 const Checkout = () => {
   const cartItems = useAppSelector((state) => state.cartReducer.items);
@@ -110,10 +125,80 @@ const Checkout = () => {
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
 
+  // State for saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+
+
+  // Load saved addresses from local storage on component mount
+  useEffect(() => {
+    const storedAddresses = localStorage.getItem("savedAddresses");
+    if (storedAddresses) {
+      try {
+        setSavedAddresses(JSON.parse(storedAddresses));
+      } catch (e) {
+        console.error("Failed to parse saved addresses from localStorage", e);
+        localStorage.removeItem("savedAddresses"); // Clear corrupted data
+      }
+    }
+  }, []);
+
+  // Effect to save addresses to local storage whenever savedAddresses changes
+  useEffect(() => {
+    localStorage.setItem("savedAddresses", JSON.stringify(savedAddresses));
+  }, [savedAddresses]);
+
+
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setBillingData((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Function to handle selecting a saved address
+  const handleSelectSavedAddress = (address: SavedAddress) => {
+    setBillingData({
+      firstName: address.firstName,
+      lastName: address.lastName,
+      companyName: address.companyName,
+      country: address.country,
+      address: address.address,
+      addressTwo: address.addressTwo,
+      town: address.town,
+      phone: address.phone,
+      email: address.email,
+    });
+    showToast("Billing details filled from saved address.", "info");
+  };
+
+  // Function to handle deleting a saved address
+  const handleDeleteSavedAddress = (id: string) => {
+    setSavedAddresses(prev => prev.filter(addr => addr.id !== id));
+    showToast("Saved address deleted successfully.", "success");
+  };
+
+  // Function to save current billing data as a new address
+  const saveCurrentAddress = () => {
+    const newAddress: SavedAddress = {
+      id: Date.now().toString(), // Simple unique ID
+      ...billingData,
+    };
+
+    // Check if an identical address already exists (simple check)
+    const exists = savedAddresses.some(addr =>
+      addr.firstName === newAddress.firstName &&
+      addr.lastName === newAddress.lastName &&
+      addr.address === newAddress.address &&
+      addr.town === newAddress.town &&
+      addr.email === newAddress.email
+    );
+
+    if (!exists) {
+      setSavedAddresses(prev => [...prev, newAddress]);
+      showToast("Address saved successfully!", "success");
+    } else {
+      showToast("This address is already saved.", "info");
+    }
+  };
+
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -292,6 +377,9 @@ const Checkout = () => {
     setCurrentOrderId(savedOrderId);
     setPaymentSuccessful(true);
     setCurrentOrderStatus(orderData.orderStatus || "Processing"); // Set initial status from backend response
+
+    // Save the current billing address to local storage
+    saveCurrentAddress();
 
     const { pdf } = await generateInvoicePDF(paymentStatusForPDF, savedOrderId);
     setInvoicePDF(pdf);
@@ -680,7 +768,34 @@ const Checkout = () => {
             <div className="flex flex-col lg:flex-row gap-7.5 xl:gap-11">
               <div className="lg:max-w-[670px] w-full">
                 <Login /> {/* Assuming Login component handles its own state */}
+                
+                {/* Saved Addresses Section */}
+                {savedAddresses.length > 0 && (
+                  <div className="bg-white shadow-1 rounded-[10px] p-4 sm:p-8.5 mt-6">
+                    <h2 className="font-medium text-dark text-xl sm:text-2xl mb-5.5">
+                      Saved Addresses
+                    </h2>
+                    <SavedAddresses
+                      savedAddresses={savedAddresses}
+                      onSelectAddress={handleSelectSavedAddress}
+                      onDeleteAddress={handleDeleteSavedAddress}
+                    />
+                  </div>
+                )}
+
                 <Billing formData={billingData} handleChange={handleBillingChange} />
+
+                {/* Button to save current address */}
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={saveCurrentAddress}
+                    className="inline-flex font-medium text-white bg-indigo-500 py-2.5 px-6 rounded-md ease-out duration-200 hover:bg-indigo-600"
+                  >
+                    Save Current Address
+                  </button>
+                </div>
+
               </div>
               <div className="max-w-[455px] w-full">
                 <div ref={invoiceRef} className="bg-white shadow-1 rounded-[10px]">
