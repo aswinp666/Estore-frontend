@@ -67,12 +67,12 @@ export const menuData: Menu[] = [
         newTab: false,
         path: "/my-account",
       },
-      {
-        id: 70,
-        name: "Seller Dashboard",
-        newTab: false,
-        path: "/seller",
-      },
+      // {
+      //   id: 70,
+      //   name: "Contact",
+      //   newTab: false,
+      //   path: "/contact",
+      // },
     ],
   },
 ];
