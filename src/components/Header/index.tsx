@@ -393,7 +393,7 @@ const Header = () => {
             <div className="hidden xl:block">
               <ul className="flex items-center gap-5.5">
                 
-                 <li className="py-4">
+                 {/* <li className="py-4">
                   <a
                     href="/sellerdashboard"
                     className="flex items-center gap-1.5 font-medium text-custom-sm text-dark hover:text-blue"
@@ -417,7 +417,7 @@ const Header = () => {
                     </svg>
                     Seller Dashboard
                   </a>
-                </li>
+                </li> */}
                 
                 
                 
